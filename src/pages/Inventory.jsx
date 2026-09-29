@@ -51,6 +51,11 @@ export default function Inventory() {
   const [editingItem, setEditingItem] = useState(null);
   const [itemForm, setItemForm] = useState(emptyItemForm);
 
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState('');
+
   const [batchModalItem, setBatchModalItem] = useState(null);
   const [editingBatch, setEditingBatch] = useState(null);
   const [batchForm, setBatchForm] = useState(emptyBatchForm);
@@ -86,6 +91,9 @@ export default function Inventory() {
   function openAddItem() {
     setEditingItem(null);
     setItemForm({ ...emptyItemForm, category: categoryOptions[0]?.value || 'other' });
+    setImageFile(null);
+    setImagePreviewUrl('');
+    setImageError('');
     setError('');
     setItemModalOpen(true);
   }
@@ -93,20 +101,88 @@ export default function Inventory() {
   function openEditItem(item) {
     setEditingItem(item);
     setItemForm({ ...item });
+    setImageFile(null);
+    setImagePreviewUrl('');
+    setImageError('');
     setError('');
     setItemModalOpen(true);
+  }
+
+  function handleImageSelect(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImageError('');
+    if (editingItem) {
+      uploadImageNow(editingItem.id, file);
+    } else {
+      setImageFile(file);
+      setImagePreviewUrl(URL.createObjectURL(file));
+    }
+  }
+
+  async function uploadImageNow(itemId, file) {
+    setImageUploading(true);
+    setImageError('');
+    try {
+      const { data } = await inventory.uploadImage(itemId, file);
+      setItemForm((f) => ({ ...f, image_url: data.image_url }));
+      load();
+      if (expandedId === itemId) refreshExpanded(itemId);
+    } catch (err) {
+      setImageError(apiErrorMessage(err, 'Could not upload this image — please try again.'));
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
+  async function handleRemoveImage() {
+    setImageError('');
+    if (!editingItem) {
+      setImageFile(null);
+      setImagePreviewUrl('');
+      return;
+    }
+    setImageUploading(true);
+    try {
+      const { data } = await inventory.removeImage(editingItem.id);
+      setItemForm((f) => ({ ...f, image_url: data.image_url }));
+      load();
+      if (expandedId === editingItem.id) refreshExpanded(editingItem.id);
+    } catch (err) {
+      setImageError(apiErrorMessage(err, 'Could not remove this image — please try again.'));
+    } finally {
+      setImageUploading(false);
+    }
   }
 
   async function handleItemSubmit(e) {
     e.preventDefault();
     setError('');
     try {
+      let saved;
       if (editingItem) {
-        await inventory.update(editingItem.id, itemForm);
+        const { data } = await inventory.update(editingItem.id, itemForm);
+        saved = data;
       } else {
-        await inventory.create(itemForm);
+        const { data } = await inventory.create(itemForm);
+        saved = data;
+      }
+      if (!editingItem && imageFile) {
+        try {
+          await inventory.uploadImage(saved.id, imageFile);
+        } catch (imgErr) {
+          setItemModalOpen(false);
+          setImageFile(null);
+          setImagePreviewUrl('');
+          load();
+          window.alert(apiErrorMessage(imgErr, 'Product saved, but the image could not be uploaded. You can add it later by editing the product.'));
+          return;
+        }
       }
       setItemModalOpen(false);
+      setImageFile(null);
+      setImagePreviewUrl('');
       load();
     } catch (err) {
       setError(apiErrorMessage(err, 'Could not save this item — check the fields and try again.'));
@@ -258,14 +334,21 @@ export default function Inventory() {
               {items.map((i) => (
                 <div className="stock-card" key={i.id}>
                   <div className="stock-card-main" onClick={() => toggleExpand(i)}>
-                    <div>
-                      <div className="stock-card-title">
-                        {i.short_code || i.name}
-                        {i.is_low_stock && <span className="badge diagnosing" style={{ marginLeft: 8 }}><span className="ledot" />Low stock</span>}
+                    <div className="stock-card-main-left">
+                      <div className="stock-card-thumb">
+                        {i.image_url ? (
+                          <img src={i.image_url} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                        ) : Icons.image}
                       </div>
-                      <div className="stock-card-sub mono">
-                        {i.name}{i.spec ? ` · ${i.spec}` : ''} · {FALLBACK_LABEL[i.category] || i.category}
-                        {i.prescription_required && <span style={{ marginLeft: 6 }}>℞</span>}
+                      <div>
+                        <div className="stock-card-title">
+                          {i.short_code || i.name}
+                          {i.is_low_stock && <span className="badge diagnosing" style={{ marginLeft: 8 }}><span className="ledot" />Low stock</span>}
+                        </div>
+                        <div className="stock-card-sub mono">
+                          {i.name}{i.spec ? ` · ${i.spec}` : ''} · {FALLBACK_LABEL[i.category] || i.category}
+                          {i.prescription_required && <span style={{ marginLeft: 6 }}>℞</span>}
+                        </div>
                       </div>
                     </div>
                     <div className="stock-card-figures">
@@ -376,6 +459,28 @@ export default function Inventory() {
               <div className="field">
                 <label>Item name</label>
                 <input required value={itemForm.name} onChange={(e) => setItemForm({ ...itemForm, name: e.target.value })} placeholder={NAME_PLACEHOLDER[businessType] || NAME_PLACEHOLDER.general} />
+              </div>
+              <div className="field">
+                <label>Product Image (Optional)</label>
+                <div className="image-picker">
+                  {imagePreviewUrl || itemForm.image_url ? (
+                    <img className="image-picker-preview" src={imagePreviewUrl || itemForm.image_url} alt="" />
+                  ) : (
+                    <div className="image-picker-placeholder">{Icons.image}</div>
+                  )}
+                  <div className="image-picker-actions">
+                    <input id="product-image-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" style={{ display: 'none' }} onChange={handleImageSelect} disabled={imageUploading} />
+                    <label htmlFor="product-image-input" className="btn small ghost" style={{ cursor: imageUploading ? 'default' : 'pointer' }}>
+                      {imageUploading ? 'Uploading…' : (imagePreviewUrl || itemForm.image_url) ? 'Change Image' : 'Upload Image'}
+                    </label>
+                    {(imagePreviewUrl || itemForm.image_url) ? (
+                      <button type="button" className="btn small ghost" onClick={handleRemoveImage} disabled={imageUploading}>Remove</button>
+                    ) : (
+                      <span className="image-picker-hint">No image selected</span>
+                    )}
+                    {imageError && <div className="form-error" style={{ marginTop: 2 }}>{imageError}</div>}
+                  </div>
+                </div>
               </div>
               <div className="field-row">
                 <div className="field">

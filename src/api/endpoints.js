@@ -36,6 +36,12 @@ export const inventory = {
   remove: (id) => client.delete(`/inventory/items/${id}/`),
   addBatch: (id, data) => client.post(`/inventory/items/${id}/batches/`, data),
   addVariant: (id, data) => client.post(`/inventory/items/${id}/variants/`, data),
+  uploadImage: (id, file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return client.post(`/inventory/items/${id}/image/`, formData);
+  },
+  removeImage: (id) => client.delete(`/inventory/items/${id}/image/`),
 };
 
 export const batches = {
