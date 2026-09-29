@@ -307,6 +307,9 @@ function PosScreen({ onDone }) {
                 disabled={outOfStock || atLimit}
                 onClick={() => handleProductTap(item)}
               >
+                {item.image_url && (
+                  <img className="pos-tile-img" src={item.image_url} alt="" onError={(e) => { e.target.style.display = 'none'; }} />
+                )}
                 <div className="pos-tile-name">{item.short_code || item.name}</div>
                 <div className="pos-tile-stock">
                   {item.has_variants ? `${item.quantity} in stock (sizes/colors)` : outOfStock ? 'Out of stock' : `${item.quantity} in stock`}

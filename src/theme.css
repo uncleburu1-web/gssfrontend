@@ -348,6 +348,7 @@ tr:last-child td{border-bottom:none;}
 .pos-tile:hover{border-color:var(--accent-dim);transform:translateY(-1px);}
 .pos-tile:active{transform:scale(.97);}
 .pos-tile:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+.pos-tile-img{margin:-14px -12px 0;height:64px;object-fit:cover;border-radius:12px 12px 0 0;display:block;}
 .pos-tile-name{font-weight:700;font-size:14px;line-height:1.25;}
 .pos-tile-stock{font-size:11px;color:var(--text-dim);}
 .pos-tile-price{margin-top:auto;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--good);font-size:14.5px;}
