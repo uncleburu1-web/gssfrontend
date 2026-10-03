@@ -32,12 +32,22 @@ const LIVE_STATUS_TITLE = {
 const SALES_NAV_ITEM = { to: '/app/sales', label: 'Sales', mobileLabel: 'Sales', icon: Icons.sales };
 const ATTENDANCE_NAV_ITEM = { to: '/app/attendance', label: 'Attendance', mobileLabel: 'Attend', icon: Icons.workers };
 
+<<<<<<< HEAD
 // Reports/Liabilities/Workers/Settings: full access within your own
 // branch — an owner OR a branch manager (see core.permissions.is_owner
 // on the backend, and MeView's is_owner_flag which mirrors it).
 const OWNER_NAV_ITEMS = [
   { to: '/app/reports', label: 'Reports', mobileLabel: 'Reports', icon: Icons.reports },
   { to: '/app/liabilities', label: 'Liabilities', mobileLabel: 'Owe', icon: Icons.liabilities },
+=======
+// Workers/Settings: full access within your own branch only — an owner OR
+// a branch manager (see core.permissions.is_owner on the backend, and
+// MeView's is_owner_flag which mirrors it). Reports/Liabilities/Expenses
+// are different: a CEO can also delegate any one of them to a specific
+// trusted role via the Control Center (core.capabilities), so those use
+// a capability check instead of the flat isOwner below, in getNavItems.
+const OWNER_ONLY_NAV_ITEMS = [
+>>>>>>> 0d80c3a (Add expense support)
   { to: '/app/workers', label: 'Workers', mobileLabel: 'Workers', icon: Icons.workers },
 ];
 const SETTINGS_NAV_ITEM = { to: '/app/settings', label: 'Settings', mobileLabel: 'Settings', icon: Icons.settings };
@@ -57,7 +67,11 @@ const STAFF_ROLE_LABEL = {
 };
 
 export default function Layout() {
+<<<<<<< HEAD
   const { user, logout, isOwner, isCeo, shopName, serviceEnabled } = useAuth();
+=======
+  const { user, logout, isOwner, isCeo, capabilities, shopName, serviceEnabled } = useAuth();
+>>>>>>> 0d80c3a (Add expense support)
   const { status: liveStatus, versions } = useLive();
   const { theme, toggleTheme } = useTheme();
   // Service (device repair/servicing) only makes sense for businesses that
@@ -70,7 +84,19 @@ export default function Layout() {
     : [...BASE_NAV_ITEMS, SALES_NAV_ITEM, ATTENDANCE_NAV_ITEM];
   const items = [
     ...coreItems,
+<<<<<<< HEAD
     ...(isOwner ? OWNER_NAV_ITEMS : []),
+=======
+    // isOwner already implies every one of these capabilities too (see
+    // core.capabilities.has_capability's owner/branch-manager bypass) —
+    // the capability check alone would be enough, but keeping `isOwner ||`
+    // explicit here avoids a network round trip's worth of doubt about
+    // ordering before `capabilities` has loaded for the common case.
+    ...(isOwner || capabilities.view_financial_reports ? [{ to: '/app/reports', label: 'Reports', mobileLabel: 'Reports', icon: Icons.reports }] : []),
+    ...(isOwner || capabilities.manage_liabilities ? [{ to: '/app/liabilities', label: 'Liabilities', mobileLabel: 'Owe', icon: Icons.liabilities }] : []),
+    ...(isOwner || capabilities.manage_expenses ? [{ to: '/app/expenses', label: 'Expenses', mobileLabel: 'Expenses', icon: Icons.billing }] : []),
+    ...(isOwner ? OWNER_ONLY_NAV_ITEMS : []),
+>>>>>>> 0d80c3a (Add expense support)
     ...(isCeo ? CEO_NAV_ITEMS : []),
     ...(isOwner ? [SETTINGS_NAV_ITEM] : []),
   ];

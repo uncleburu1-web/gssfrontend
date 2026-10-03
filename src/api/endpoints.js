@@ -104,6 +104,38 @@ export const liabilities = {
   remove: (id) => client.delete(`/liabilities/${id}/`),
 };
 
+
+export const liabilityPayments = {
+  create: (data) => client.post('/liability-payments/', data),
+  remove: (id) => client.delete(`/liability-payments/${id}/`),
+};
+
+export const expenseCategories = {
+  list: (params) => client.get('/expense-categories/', { params }),
+  create: (data) => client.post('/expense-categories/', data),
+  remove: (id) => client.delete(`/expense-categories/${id}/`),
+};
+
+export const expenses = {
+  list: (params) => client.get('/expenses/', { params }),
+  create: (data) => client.post('/expenses/', data),
+  update: (id, data) => client.patch(`/expenses/${id}/`, data),
+  remove: (id) => client.delete(`/expenses/${id}/`),
+  uploadReceipt: (id, file) => {
+    const formData = new FormData();
+    formData.append('receipt', file);
+    return client.post(`/expenses/${id}/receipt/`, formData);
+  },
+  removeReceipt: (id) => client.delete(`/expenses/${id}/receipt/`),
+};
+
+export const analytics = {
+  overview: (params) => client.get('/reports/analytics/overview/', { params }),
+  expenses: (params) => client.get('/reports/analytics/expenses/', { params }),
+  liabilities: (params) => client.get('/reports/analytics/liabilities/', { params }),
+};
+
+
 export const subscription = {
   status: () => client.get('/subscription/status/'),
   checkout: (callback_url, billing_cycle) => client.post('/subscription/checkout/', { callback_url, billing_cycle }),
