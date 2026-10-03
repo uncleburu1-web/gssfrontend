@@ -57,10 +57,7 @@ export default function App() {
               >
                 <Route index element={<Dashboard />} />
 
-                <Route
-                  path="inventory"
-                  element={<Inventory />}
-                />
+                <Route path="inventory" element={<Inventory />} />
 
                 <Route
                   path="service"
@@ -71,10 +68,7 @@ export default function App() {
                   }
                 />
 
-                <Route
-                  path="sales"
-                  element={<Sales />}
-                />
+                <Route path="sales" element={<Sales />} />
 
                 <Route
                   path="reports"
@@ -112,10 +106,7 @@ export default function App() {
                   }
                 />
 
-                <Route
-                  path="attendance"
-                  element={<Attendance />}
-                />
+                <Route path="attendance" element={<Attendance />} />
 
                 <Route
                   path="billing"
@@ -159,4 +150,4 @@ export default function App() {
       </ThemeProvider>
     </BrowserRouter>
   );
-}
+                }
