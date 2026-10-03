@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import { AuthProvider } from './context/AuthContext';
@@ -19,6 +18,7 @@ import Guide from './pages/Guide';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import VerifyEmail from './pages/VerifyEmail';
+
 import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import Service from './pages/Service';
@@ -57,6 +57,7 @@ export default function App() {
               >
                 <Route index element={<Dashboard />} />
                 <Route path="inventory" element={<Inventory />} />
+
                 <Route
                   path="service"
                   element={
@@ -65,6 +66,7 @@ export default function App() {
                     </RequireService>
                   }
                 />
+
                 <Route path="sales" element={<Sales />} />
 
                 <Route
@@ -96,29 +98,49 @@ export default function App() {
 
                 <Route
                   path="workers"
-                  element={<RequireOwner><Workers /></RequireOwner>}
+                  element={
+                    <RequireOwner>
+                      <Workers />
+                    </RequireOwner>
+                  }
                 />
 
                 <Route path="attendance" element={<Attendance />} />
 
                 <Route
                   path="billing"
-                  element={<RequireCeo><Billing /></RequireCeo>}
+                  element={
+                    <RequireCeo>
+                      <Billing />
+                    </RequireCeo>
+                  }
                 />
 
                 <Route
                   path="settings"
-                  element={<RequireOwner><Settings /></RequireOwner>}
+                  element={
+                    <RequireOwner>
+                      <Settings />
+                    </RequireOwner>
+                  }
                 />
 
                 <Route
                   path="branches/new"
-                  element={<RequireCeo><BranchCreate /></RequireCeo>}
+                  element={
+                    <RequireCeo>
+                      <BranchCreate />
+                    </RequireCeo>
+                  }
                 />
 
                 <Route
                   path="receipt-setup"
-                  element={<RequireCeo><ReceiptSetup /></RequireCeo>}
+                  element={
+                    <RequireCeo>
+                      <ReceiptSetup />
+                    </RequireCeo>
+                  }
                 />
               </Route>
             </Routes>
@@ -128,4 +150,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-
