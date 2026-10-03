@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react';
-<<<<<<< HEAD
-import { liabilities, reports } from '../api/endpoints';
-import { money, fmtDate } from '../utils/format';
-=======
 import { liabilities, liabilityPayments, reports } from '../api/endpoints';
 import { money, fmtDate, apiErrorMessage } from '../utils/format';
->>>>>>> 0d80c3a (Add expense support)
 import { Icons } from '../components/Icons';
 import Amount from '../components/Amount';
 
@@ -14,9 +9,6 @@ const CATEGORY_LABEL = {
   salary: 'Staff salary owed', supplier_credit: 'Supplier credit', other: 'Other',
 };
 
-<<<<<<< HEAD
-const emptyForm = { name: '', category: 'rent', amount: '', due_date: '', status: 'pending', notes: '' };
-=======
 const STATUS_LABEL = { unpaid: 'Unpaid', partially_paid: 'Partially paid', cleared: 'Cleared' };
 const STATUS_BADGE = { unpaid: 'warn', partially_paid: 'muted', cleared: 'good' };
 
@@ -24,7 +16,6 @@ const PAYMENT_METHOD_LABEL = { cash: 'Cash', transfer: 'Transfer', pos: 'POS/Car
 
 const emptyForm = { name: '', category: 'rent', owed_to: '', amount: '', due_date: '', notes: '' };
 const emptyPayment = { amount: '', payment_method: 'cash', notes: '' };
->>>>>>> 0d80c3a (Add expense support)
 
 export default function Liabilities() {
   const [rows, setRows] = useState([]);
@@ -33,12 +24,6 @@ export default function Liabilities() {
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
-<<<<<<< HEAD
-
-  async function load() {
-    setLoading(true);
-    const [liabRes, nwRes] = await Promise.all([liabilities.list(), reports.netWorth()]);
-=======
   const [payModal, setPayModal] = useState(null); // the liability being paid
   const [payForm, setPayForm] = useState(emptyPayment);
   const [payError, setPayError] = useState('');
@@ -51,18 +36,13 @@ export default function Liabilities() {
       liabilities.list(statusFilter ? { status: statusFilter } : undefined),
       reports.netWorth(),
     ]);
->>>>>>> 0d80c3a (Add expense support)
     setRows(liabRes.data.results || liabRes.data);
     setNetWorth(nwRes.data);
     setLoading(false);
   }
 
-<<<<<<< HEAD
-  useEffect(() => { load(); }, []);
-=======
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [statusFilter]);
->>>>>>> 0d80c3a (Add expense support)
 
   function openAdd() {
     setForm(emptyForm);
@@ -78,20 +58,6 @@ export default function Liabilities() {
       setModalOpen(false);
       load();
     } catch (err) {
-<<<<<<< HEAD
-      setError('Could not save this liability — check the fields and try again.');
-    }
-  }
-
-  async function toggleStatus(l) {
-    await liabilities.update(l.id, { status: l.status === 'pending' ? 'paid' : 'pending' });
-    load();
-  }
-
-  async function handleDelete(id) {
-    if (!confirm('Remove this liability record?')) return;
-    await liabilities.remove(id);
-=======
       setError(apiErrorMessage(err, 'Could not save this liability — check the fields and try again.'));
     }
   }
@@ -123,7 +89,6 @@ export default function Liabilities() {
   async function handleDeletePayment(paymentId) {
     if (!confirm('Remove this payment? The liability will reopen for the amount removed.')) return;
     await liabilityPayments.remove(paymentId);
->>>>>>> 0d80c3a (Add expense support)
     load();
   }
 
@@ -137,11 +102,7 @@ export default function Liabilities() {
       <div className="topbar">
         <div>
           <div className="page-title">Liabilities</div>
-<<<<<<< HEAD
-          <div className="page-sub">What you owe, measured against what the shop is worth</div>
-=======
           <div className="page-sub">What you owe, and the full payment history behind every balance</div>
->>>>>>> 0d80c3a (Add expense support)
         </div>
       </div>
 
@@ -151,11 +112,7 @@ export default function Liabilities() {
           <div className="section-body" style={{ paddingTop: 16 }}>
             <div className="stat-grid">
               <div className="stat-card"><div className="stat-label">Assets (stock + receivables)</div><Amount className="stat-value mono" value={netWorth.assets} /></div>
-<<<<<<< HEAD
-              <div className="stat-card"><div className="stat-label">Liabilities (pending)</div><Amount className="stat-value mono warn" value={netWorth.liabilities} /></div>
-=======
               <div className="stat-card"><div className="stat-label">Liabilities (outstanding)</div><Amount className="stat-value mono warn" value={netWorth.liabilities} /></div>
->>>>>>> 0d80c3a (Add expense support)
               <div className="stat-card">
                 <div className="stat-label">Net worth</div>
                 <Amount
@@ -184,9 +141,6 @@ export default function Liabilities() {
       <div className="section">
         <div className="section-head">
           <h3>Liabilities ({rows.length})</h3>
-<<<<<<< HEAD
-          <button className="btn" onClick={openAdd}>{Icons.plus} Add liability</button>
-=======
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="">All statuses</option>
@@ -194,40 +148,11 @@ export default function Liabilities() {
             </select>
             <button className="btn" onClick={openAdd}>{Icons.plus} Add liability</button>
           </div>
->>>>>>> 0d80c3a (Add expense support)
         </div>
         <div className="section-body">
           {loading ? (
             <div className="empty">Loading…</div>
           ) : rows.length === 0 ? (
-<<<<<<< HEAD
-            <div className="empty">No liabilities recorded — rent, loans, or bills you add here will show up against your net worth.</div>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table>
-                <thead><tr><th>Name</th><th>Category</th><th>Amount</th><th>Due date</th><th>Status</th><th></th></tr></thead>
-                <tbody>
-                  {rows.map((l) => (
-                    <tr key={l.id}>
-                      <td>{l.name}</td>
-                      <td>{CATEGORY_LABEL[l.category] || l.category}</td>
-                      <td className="num">{money(l.amount)}</td>
-                      <td className="mono">{fmtDate(l.due_date)}</td>
-                      <td>
-                        <span className={`badge ${l.status === 'paid' ? 'collected' : 'diagnosing'}`}>
-                          <span className="ledot" />{l.status === 'paid' ? 'Paid' : 'Pending'}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="row-actions">
-                          <button className="btn small ghost" onClick={() => toggleStatus(l)}>
-                            Mark {l.status === 'paid' ? 'pending' : 'paid'}
-                          </button>
-                          <button className="btn small danger" onClick={() => handleDelete(l.id)}>{Icons.trash}</button>
-                        </div>
-                      </td>
-                    </tr>
-=======
             <div className="empty">No liabilities recorded — rent, loans, salaries owed, or supplier bills you add here will show up against your net worth.</div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -291,7 +216,6 @@ export default function Liabilities() {
                         </tr>
                       )}
                     </>
->>>>>>> 0d80c3a (Add expense support)
                   ))}
                 </tbody>
               </table>
@@ -319,12 +243,6 @@ export default function Liabilities() {
                 </div>
                 <div className="field">
                   <label>Amount (₦)</label>
-<<<<<<< HEAD
-                  <input required type="number" min="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
-                </div>
-              </div>
-              <div className="field">
-=======
                   <input required type="number" min="0.01" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
                 </div>
               </div>
@@ -333,7 +251,6 @@ export default function Liabilities() {
                 <input value={form.owed_to} onChange={(e) => setForm({ ...form, owed_to: e.target.value })} placeholder="Person or company" />
               </div>
               <div className="field">
->>>>>>> 0d80c3a (Add expense support)
                 <label>Due date</label>
                 <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
               </div>
@@ -349,8 +266,6 @@ export default function Liabilities() {
           </div>
         </div>
       )}
-<<<<<<< HEAD
-=======
 
       {payModal && (
         <div className="modal-backdrop" onClick={() => setPayModal(null)}>
@@ -388,7 +303,6 @@ export default function Liabilities() {
           </div>
         </div>
       )}
->>>>>>> 0d80c3a (Add expense support)
     </>
   );
 }

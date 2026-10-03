@@ -104,7 +104,6 @@ export const liabilities = {
   remove: (id) => client.delete(`/liabilities/${id}/`),
 };
 
-
 export const liabilityPayments = {
   create: (data) => client.post('/liability-payments/', data),
   remove: (id) => client.delete(`/liability-payments/${id}/`),
@@ -134,7 +133,6 @@ export const analytics = {
   expenses: (params) => client.get('/reports/analytics/expenses/', { params }),
   liabilities: (params) => client.get('/reports/analytics/liabilities/', { params }),
 };
-
 
 export const subscription = {
   status: () => client.get('/subscription/status/'),

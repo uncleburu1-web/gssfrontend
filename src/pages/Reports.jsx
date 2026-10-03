@@ -1,13 +1,4 @@
 import { useEffect, useState } from 'react';
-<<<<<<< HEAD
-import { reports } from '../api/endpoints';
-import { useAuth } from '../context/AuthContext';
-import { money } from '../utils/format';
-import { Icons } from '../components/Icons';
-import Amount from '../components/Amount';
-
-const REPORT_TABS = [
-=======
 import { reports, analytics } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { money, apiErrorMessage } from '../utils/format';
@@ -29,7 +20,6 @@ const PERIOD_OPTIONS = [
 
 const REPORT_TABS = [
   { id: 'overview', label: 'Executive Overview' },
->>>>>>> 0d80c3a (Add expense support)
   { id: 'summary', label: 'Sales summary' },
   { id: 'by-item', label: 'Sales by item' },
   { id: 'best-selling', label: 'Best selling' },
@@ -40,11 +30,8 @@ const REPORT_TABS = [
   { id: 'tax', label: 'Tax' },
   { id: 'expiring', label: 'Expiring inventory' },
   { id: 'valuation', label: 'Inventory valuation' },
-<<<<<<< HEAD
-=======
   { id: 'expense-analytics', label: 'Expense Analytics' },
   { id: 'liability-analytics', label: 'Liability Analytics' },
->>>>>>> 0d80c3a (Add expense support)
 ];
 
 function todayISO() {
@@ -56,19 +43,6 @@ function thisMonthISO() {
 
 export default function Reports() {
   const { shopName } = useAuth();
-<<<<<<< HEAD
-  const [tab, setTab] = useState('summary');
-  const [periodMode, setPeriodMode] = useState('day'); // 'day' | 'month'
-  const [date, setDate] = useState(todayISO());
-  const [month, setMonth] = useState(thisMonthISO());
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  const usesPeriod = tab !== 'expiring' && tab !== 'valuation';
-  const params = usesPeriod ? (periodMode === 'day' ? { date } : { month }) : undefined;
-  const activeTabLabel = REPORT_TABS.find((t) => t.id === tab)?.label || 'Report';
-  const periodLabel = !usesPeriod ? '' : periodMode === 'day' ? date : month;
-=======
   const [tab, setTab] = useState('overview');
   const [periodMode, setPeriodMode] = useState('day'); // 'day' | 'month' -- the OLDER reports' picker
   const [date, setDate] = useState(todayISO());
@@ -90,27 +64,20 @@ export default function Reports() {
   const periodLabel = isRangeTab
     ? (PERIOD_OPTIONS.find(([v]) => v === rangePeriod)?.[1] || '')
     : !usesPeriod ? '' : periodMode === 'day' ? date : month;
->>>>>>> 0d80c3a (Add expense support)
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       setLoading(true);
-<<<<<<< HEAD
-=======
       setLoadError('');
->>>>>>> 0d80c3a (Add expense support)
       setData(null);
       try {
         let res;
         switch (tab) {
-<<<<<<< HEAD
-=======
           case 'overview': res = await analytics.overview(rangeParams); break;
           case 'expense-analytics': res = await analytics.expenses(rangeParams); break;
           case 'liability-analytics': res = await analytics.liabilities(rangeParams); break;
->>>>>>> 0d80c3a (Add expense support)
           case 'summary': res = await reports.salesSummary(params); break;
           case 'by-item': res = await reports.salesByItem(params); break;
           case 'best-selling': res = await reports.bestSelling(params); break;
@@ -124,11 +91,8 @@ export default function Reports() {
           default: res = { data: null };
         }
         if (!cancelled) setData(res.data);
-<<<<<<< HEAD
-=======
       } catch (err) {
         if (!cancelled) setLoadError(apiErrorMessage(err, 'Could not load this report.'));
->>>>>>> 0d80c3a (Add expense support)
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -137,11 +101,7 @@ export default function Reports() {
     load();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-<<<<<<< HEAD
-  }, [tab, date, month, periodMode]);
-=======
   }, [tab, date, month, periodMode, rangePeriod, customStart, customEnd]);
->>>>>>> 0d80c3a (Add expense support)
 
   return (
     <>
@@ -171,8 +131,6 @@ export default function Reports() {
         ))}
       </div>
 
-<<<<<<< HEAD
-=======
       {isRangeTab && (
         <div className="period-picker" style={{ marginBottom: 16, flexWrap: 'wrap' }}>
           <select value={rangePeriod} onChange={(e) => setRangePeriod(e.target.value)}>
@@ -187,7 +145,6 @@ export default function Reports() {
           )}
         </div>
       )}
->>>>>>> 0d80c3a (Add expense support)
       {usesPeriod && (
         <div className="period-picker" style={{ marginBottom: 16 }}>
           <select value={periodMode} onChange={(e) => setPeriodMode(e.target.value)}>
@@ -204,11 +161,7 @@ export default function Reports() {
 
       <div className="section">
         <div className="section-body" style={{ paddingTop: 16 }}>
-<<<<<<< HEAD
-          {loading || !data ? <div className="empty">Loading…</div> : renderReport(tab, data)}
-=======
           {loadError ? <div className="form-error">{loadError}</div> : loading || !data ? <div className="empty">Loading…</div> : renderReport(tab, data)}
->>>>>>> 0d80c3a (Add expense support)
         </div>
       </div>
 
@@ -224,12 +177,9 @@ function renderReport(tab, rawData) {
   // so a stale or unexpected response shape can't crash the page.
   const data = { rows: [], series: [], product_sales: 0, service_revenue: 0, ...rawData };
   switch (tab) {
-<<<<<<< HEAD
-=======
     case 'overview': return <OverviewReport data={data} />;
     case 'expense-analytics': return <ExpenseAnalyticsReport data={data} />;
     case 'liability-analytics': return <LiabilityAnalyticsReport data={data} />;
->>>>>>> 0d80c3a (Add expense support)
     case 'summary': return <SummaryReport data={data} />;
     case 'by-item': return <ByItemReport data={data} />;
     case 'best-selling': return <BestSellingReport data={data} />;
@@ -244,8 +194,6 @@ function renderReport(tab, rawData) {
   }
 }
 
-<<<<<<< HEAD
-=======
 function KpiCard({ label, block, color, invertColor }) {
   const changePct = block?.change_pct;
   const positive = changePct != null && changePct > 0;
@@ -408,7 +356,6 @@ function LiabilityAnalyticsReport({ data }) {
   );
 }
 
->>>>>>> 0d80c3a (Add expense support)
 function SummaryReport({ data }) {
   const maxSales = Math.max(1, ...data.series.map((p) => p.sales));
   return (
