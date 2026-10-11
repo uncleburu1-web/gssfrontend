@@ -25,7 +25,9 @@ const LIVE_STATUS_TITLE = {
   open: 'Live — sales and stock changes appear instantly',
   connecting: 'Connecting to live updates…',
   reconnecting: 'Connection dropped — retrying now',
-  offline: "Been offline a little while — you can keep selling, we'll catch up once it's back",
+  // The web and Android apps have no offline queue (only the desktop till does): a sale attempted
+  // here while offline simply fails. The old text promised otherwise, which is how a sale gets lost.
+  offline: "Offline — this screen needs internet to save anything. The desktop till keeps selling offline and syncs later.",
   closed: 'Reconnecting…',
 };
 
