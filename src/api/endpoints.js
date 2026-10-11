@@ -72,12 +72,15 @@ export const service = {
 };
 
 export const sales = {
-  list: (params) => client.get('/sales/', { params }),
-  create: (data) => client.post('/sales/', data),
-  remove: (id) => client.delete(`/sales/${id}/`),
-  addPayment: (id, amount) => client.post(`/sales/${id}/add-payment/`, { amount }),
-  replaceItem: (id, data) => client.post(`/sales/${id}/replace-item/`, data),
+list: (params) => client.get('/sales/', { params }),
+create: (data, config) => client.post('/sales/', data, config),
+remove: (id) => client.delete(`/sales/${id}/`),
+addPayment: (id, amount, config) =>
+client.post(`/sales/${id}/add-payment/`, { amount }, config),
+replaceItem: (id, data) => client.post(`/sales/${id}/replace-item/`, data),
 };
+
+
 
 export const workers = {
   list: (params) => client.get('/workers/', { params }),
