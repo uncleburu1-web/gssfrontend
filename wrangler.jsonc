@@ -1,0 +1,14 @@
+// Cloudflare Workers config for the web app (static Vite build served as assets).
+// Without this file `wrangler versions upload` (what Cloudflare runs to build a preview for every
+// branch / pull request) cannot find the build output and fails; only main's deploy, which passes
+// the assets folder on the command line in the Cloudflare dashboard, worked.
+{
+  "name": "gssfrontend",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // React Router uses real URLs (/sales, /inventory ...): serve index.html for them so a refresh
+    // or a shared link opens the right page instead of a 404.
+    "not_found_handling": "single-page-application"
+  }
+}
