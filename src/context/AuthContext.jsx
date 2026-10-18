@@ -16,9 +16,14 @@ export function AuthProvider({ children }) {
     auth
       .me()
       .then(({ data }) => setUser(data))
-      .catch(() => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
+      .catch((error) => {
+        // Only a REJECTED session (a 401 that survived the client's own refresh attempt) means
+        // "signed out". A network blip or a 5xx while the page loads must not throw away a
+        // perfectly good session and force everyone to type their password again.
+        if (error?.response?.status === 401) {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+        }
       })
       .finally(() => setLoading(false));
   }, []);

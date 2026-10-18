@@ -30,7 +30,11 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // "Wrong username or password" is also a 401, but it is an ANSWER, not an expired session.
+    // Treating it as one tried to refresh with no refresh token, failed, and hard-redirected to
+    // /login: a full page reload that wiped the error message before anyone could read it.
+    const isCredentialCall = /\/auth\/(login|register|refresh|verify|resend)/.test(originalRequest?.url || '');
+    if (error.response?.status === 401 && !originalRequest._retry && !isCredentialCall) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           queue.push({ resolve, reject });

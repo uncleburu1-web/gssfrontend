@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { sales, inventory } from '../api/endpoints';
+import { newIdempotencyKey } from '../api/idempotency.js';
 import { useLive } from '../context/LiveContext';
 import { useAuth } from '../context/AuthContext';
 import { money, fmtDate, apiErrorMessage } from '../utils/format';
@@ -71,6 +72,11 @@ function PosScreen({ onDone }) {
   const [customName, setCustomName] = useState('');
   const [customPrice, setCustomPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // One Idempotency-Key per cart attempt (see api/idempotency.js). If "Charge" reaches the server but the
+  // reply is lost and the cashier taps it again, the retry carries the SAME key and gets the original sale
+  // back instead of a duplicate. A changed cart is a different sale, so any change drops the key.
+  const chargeKey = useRef(null);
+  useEffect(() => { chargeKey.current = null; }, [cart, customerName, paymentMethod, installment, amountPaid]);
   const [error, setError] = useState('');
 
   function loadCatalog() {
@@ -243,7 +249,9 @@ function PosScreen({ onDone }) {
         })),
       };
       if (installment) payload.amount_paid = amountPaid || 0;
-      const { data } = await sales.create(payload);
+      if (!chargeKey.current) chargeKey.current = newIdempotencyKey();
+      const { data } = await sales.create(payload, { headers: { 'Idempotency-Key': chargeKey.current } });
+      chargeKey.current = null;
       printSaleReceipt(data, shopInfo);
       setCart([]);
       setCustomerName('');
@@ -252,7 +260,12 @@ function PosScreen({ onDone }) {
       loadCatalog();
       onDone();
     } catch (err) {
-      setError(apiErrorMessage(err, 'Could not complete this sale — check stock and try again.'));
+      // No `err.response` means the request got no reply at all (signal dropped, server restarting): we
+      // genuinely can't tell if the sale was recorded. Retrying is safe because the retry carries the same
+      // Idempotency-Key, so say that instead of the misleading "check stock".
+      setError(err.response
+        ? apiErrorMessage(err, 'Could not complete this sale — check stock and try again.')
+        : 'No reply from the server, so we can\u2019t tell whether this sale went through. Tap Charge again: it will not ring the customer up twice.');
     } finally {
       setSubmitting(false);
     }
@@ -459,6 +472,9 @@ function SalesHistory({ tab }) {
 
   const [payModal, setPayModal] = useState(null);
   const [payAmount, setPayAmount] = useState('');
+  // Same idea for installment payments: a retried payment must be counted once, not twice.
+  const payKey = useRef(null);
+  useEffect(() => { payKey.current = null; }, [payModal, payAmount]);
 
   const [replaceModal, setReplaceModal] = useState(null);
   const [replaceLine, setReplaceLine] = useState('');
@@ -504,7 +520,9 @@ function SalesHistory({ tab }) {
     e.preventDefault();
     const amt = Number(payAmount);
     if (!amt || amt <= 0) return;
-    await sales.addPayment(payModal.id, amt);
+    if (!payKey.current) payKey.current = newIdempotencyKey();
+    await sales.addPayment(payModal.id, amt, { headers: { 'Idempotency-Key': payKey.current } });
+    payKey.current = null;
     setPayModal(null);
     load();
   }
