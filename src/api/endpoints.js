@@ -47,6 +47,12 @@ export const inventory = {
     return client.post(`/inventory/items/${id}/image/`, formData);
   },
   removeImage: (id) => client.delete(`/inventory/items/${id}/image/`),
+  recordDamage: (id, data) => client.post(`/inventory/items/${id}/damage/`, data),
+  stockCount: (id, data) => client.post(`/inventory/items/${id}/stock-count/`, data),
+};
+
+export const stockMovements = {
+  list: (params) => client.get('/inventory/movements/', { params }),
 };
 
 export const batches = {

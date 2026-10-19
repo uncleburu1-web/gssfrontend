@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useLive } from '../context/LiveContext';
 import { money, fmtDate, apiErrorMessage } from '../utils/format';
 import { Icons } from '../components/Icons';
+import StockLedgerPanel from '../components/StockLedgerPanel';
 
 // Full label map for every category code that has ever existed (matches
 // inventory/models.py CATEGORY_CHOICES) — used only as a display fallback
@@ -441,6 +442,7 @@ export default function Inventory() {
                           </table>
                         </div>
                       )}
+                      <StockLedgerPanel item={i} detail={expandedDetail} isOwner={isOwner} onChanged={() => refreshExpanded(i.id)} />
                     </div>
                   )}
                 </div>
