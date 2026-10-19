@@ -158,13 +158,22 @@ export default function Layout() {
             <span className="dot" />
             {LIVE_STATUS_LABEL[liveStatus] || LIVE_STATUS_LABEL.closed}
           </div>
-          <button
-            className="btn ghost small"
-            style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
-            onClick={logout}
-          >
-            {Icons.logout} Log out
-          </button>
+          <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+            {/* Subscribe sits beside Log out for whoever can pay (the CEO/owner of the business),
+                whenever they are on the free trial or the subscription has ended. */}
+            {isCeo && sub && (sub.effective_status === 'trial' || !sub.cloud_services_enabled) && (
+              <Link to="/app/billing" className="btn small" style={{ flex: 1, justifyContent: 'center', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                Subscribe
+              </Link>
+            )}
+            <button
+              className="btn ghost small"
+              style={{ flex: 1, justifyContent: 'center', whiteSpace: 'nowrap' }}
+              onClick={logout}
+            >
+              {Icons.logout} Log out
+            </button>
+          </div>
           <button className="theme-toggle" onClick={toggleTheme}>
             {theme === 'dark' ? Icons.sun : Icons.moon}
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
