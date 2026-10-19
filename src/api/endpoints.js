@@ -17,6 +17,11 @@ export const branches = {
   remove: (id) => client.delete(`/branches/${id}/`),
 };
 
+export const shifts = {
+  list: (params) => client.get('/shifts/', { params }),
+  get: (id) => client.get(`/shifts/${id}/`),
+};
+
 export const devices = {
   list: () => client.get('/devices/'),
   remove: (id) => client.delete(`/devices/${id}/`),

@@ -33,6 +33,7 @@ const LIVE_STATUS_TITLE = {
 
 const SALES_NAV_ITEM = { to: '/app/sales', label: 'Sales', mobileLabel: 'Sales', icon: Icons.sales };
 const ATTENDANCE_NAV_ITEM = { to: '/app/attendance', label: 'Attendance', mobileLabel: 'Attend', icon: Icons.workers };
+const SHIFTS_NAV_ITEM = { to: '/app/shifts', label: 'Shifts', mobileLabel: 'Shifts', icon: Icons.reports };
 
 // Workers/Settings: full access within your own branch only — an owner OR
 // a branch manager (see core.permissions.is_owner on the backend, and
@@ -69,8 +70,8 @@ export default function Layout() {
   // entirely by what the owner picked at signup (Organization.business_type
   // on the backend).
   const coreItems = serviceEnabled
-    ? [...BASE_NAV_ITEMS, SERVICE_NAV_ITEM, SALES_NAV_ITEM, ATTENDANCE_NAV_ITEM]
-    : [...BASE_NAV_ITEMS, SALES_NAV_ITEM, ATTENDANCE_NAV_ITEM];
+    ? [...BASE_NAV_ITEMS, SERVICE_NAV_ITEM, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM]
+    : [...BASE_NAV_ITEMS, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM];
   const items = [
     ...coreItems,
     // isOwner already implies every one of these capabilities too (see
