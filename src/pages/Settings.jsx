@@ -504,6 +504,33 @@ function ControlCenterSection() {
   );
 }
 
+// The cloud decides the status (stage 1b): online, stale (on, but its sales are not reaching the
+// cloud, or no contact for 2-15 min) or offline. Older backends only send is_online.
+const DEVICE_STATUS = {
+  online: { cls: 'good', label: 'Online' },
+  stale: { cls: 'warn', label: 'Stale' },
+  offline: { cls: 'muted', label: 'Offline' },
+};
+
+function DeviceStatus({ device }) {
+  const status = DEVICE_STATUS[device.status] || (device.is_online ? DEVICE_STATUS.online : DEVICE_STATUS.offline);
+  const waiting = device.pending_ops || 0;
+  const failed = device.failed_ops || 0;
+  const title = device.status === 'stale'
+    ? (failed ? `${failed} upload(s) failed on this till` : waiting ? `${waiting} change(s) waiting to upload` : 'No contact for a few minutes')
+    : undefined;
+  return (
+    <span title={title}>
+      <span className={`badge ${status.cls}`}>{status.label}</span>
+      {(waiting > 0 || failed > 0) && (
+        <span className="muted small" style={{ marginLeft: 6 }}>
+          {waiting > 0 ? `${waiting} waiting` : ''}{waiting > 0 && failed > 0 ? ' · ' : ''}{failed > 0 ? `${failed} failed` : ''}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function DevicesSection() {
   const [list, setList] = useState(null);
   const [error, setError] = useState('');
@@ -540,15 +567,16 @@ function DevicesSection() {
         ) : (
           <table className="table">
             <thead>
-              <tr><th>Device</th><th>Type</th><th>Last seen</th><th>Status</th><th></th></tr>
+              <tr><th>Device</th><th>Type</th><th>Last contact</th><th>Signed in</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
               {list.map((d) => (
                 <tr key={d.id}>
                   <td>{Icons.device} {d.name || (d.device_type === 'desktop' ? 'Till' : 'Device')}</td>
                   <td className="mono">{d.device_type}</td>
-                  <td>{d.last_seen_at ? new Date(d.last_seen_at).toLocaleString() : 'Never'}</td>
-                  <td><span className={`badge ${d.is_online ? 'good' : 'muted'}`}>{d.is_online ? 'Online' : 'Offline'}</span></td>
+                  <td>{(d.last_contact_at || d.last_seen_at) ? new Date(d.last_contact_at || d.last_seen_at).toLocaleString() : 'Never'}</td>
+                  <td>{d.current_user || '—'}</td>
+                  <td><DeviceStatus device={d} /></td>
                   <td style={{ textAlign: 'right' }}>
                     <button className="btn ghost small" onClick={() => unpair(d)}>{Icons.trash} Remove</button>
                   </td>

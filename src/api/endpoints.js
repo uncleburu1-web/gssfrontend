@@ -17,6 +17,15 @@ export const branches = {
   remove: (id) => client.delete(`/branches/${id}/`),
 };
 
+export const auditLog = {
+  list: (params) => client.get('/audit/', { params }),
+};
+
+export const shifts = {
+  list: (params) => client.get('/shifts/', { params }),
+  get: (id) => client.get(`/shifts/${id}/`),
+};
+
 export const devices = {
   list: () => client.get('/devices/'),
   remove: (id) => client.delete(`/devices/${id}/`),
@@ -42,6 +51,12 @@ export const inventory = {
     return client.post(`/inventory/items/${id}/image/`, formData);
   },
   removeImage: (id) => client.delete(`/inventory/items/${id}/image/`),
+  recordDamage: (id, data) => client.post(`/inventory/items/${id}/damage/`, data),
+  stockCount: (id, data) => client.post(`/inventory/items/${id}/stock-count/`, data),
+};
+
+export const stockMovements = {
+  list: (params) => client.get('/inventory/movements/', { params }),
 };
 
 export const batches = {

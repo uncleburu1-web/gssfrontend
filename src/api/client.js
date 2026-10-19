@@ -30,6 +30,9 @@ client.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    if (error.response?.status === 402 && error.response?.data?.code === 'subscription_expired') {
+      window.dispatchEvent(new Event('benchline:subscription-ended')); // Layout swaps the app for the small card
+    }
     // "Wrong username or password" is also a 401, but it is an ANSWER, not an expired session.
     // Treating it as one tried to refresh with no refresh token, failed, and hard-redirected to
     // /login: a full page reload that wiped the error message before anyone could read it.
