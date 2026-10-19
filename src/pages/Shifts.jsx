@@ -47,9 +47,9 @@ export default function Shifts() {
 
   return (
     <div>
-      <div className="page-head">
+      <div className="topbar">
         <div>
-          <h1>Shifts</h1>
+          <div className="page-title">Shifts</div>
           <div className="page-sub">
             {seesEveryone ? 'Every cashier’s shift and cash count, from every till' : 'Your shifts and cash counts'}
           </div>

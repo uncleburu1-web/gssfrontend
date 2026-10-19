@@ -26,9 +26,9 @@ export default function AuditLog() {
 
   return (
     <div>
-      <div className="page-head">
+      <div className="topbar">
         <div>
-          <h1 className="page-title">Audit log</h1>
+          <div className="page-title">Audit log</div>
           <div className="page-sub">Deleted sales, stock write-offs and counts, closed shifts, staff and permission changes</div>
         </div>
       </div>
