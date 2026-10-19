@@ -574,6 +574,7 @@ function SalesHistory({ tab }) {
       <div className="section-head">
         <div className="page-sub" style={{ margin: 0 }}>
           {tab === 'completed' ? 'Completed sales' : 'Outstanding (installment) sales'}
+          {!capabilities?.view_all_sales && ' — only the ones you made'}
         </div>
       </div>
       <div className="section-body">
