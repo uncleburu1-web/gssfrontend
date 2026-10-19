@@ -17,6 +17,10 @@ export const branches = {
   remove: (id) => client.delete(`/branches/${id}/`),
 };
 
+export const auditLog = {
+  list: (params) => client.get('/audit/', { params }),
+};
+
 export const shifts = {
   list: (params) => client.get('/shifts/', { params }),
   get: (id) => client.get(`/shifts/${id}/`),

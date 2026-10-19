@@ -28,6 +28,7 @@ import BranchCreate from './pages/BranchCreate';
 import ReceiptSetup from './pages/ReceiptSetup';
 import Attendance from './pages/Attendance';
 import Shifts from './pages/Shifts';
+import AuditLog from './pages/AuditLog';
 
 export default function App() {
   return (
@@ -60,6 +61,7 @@ export default function App() {
             <Route path="workers" element={<RequireOwner><Workers /></RequireOwner>} />
             <Route path="attendance" element={<Attendance />} />
             <Route path="shifts" element={<Shifts />} />
+            <Route path="audit" element={<AuditLog />} />
             <Route path="billing" element={<RequireCeo><Billing /></RequireCeo>} />
             <Route path="settings" element={<RequireOwner><Settings /></RequireOwner>} />
             <Route path="branches/new" element={<RequireCeo><BranchCreate /></RequireCeo>} />
