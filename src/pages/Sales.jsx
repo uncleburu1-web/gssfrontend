@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { sales, inventory } from '../api/endpoints';
+import { sales, inventory, promotions as promotionsApi } from '../api/endpoints';
 import { newIdempotencyKey } from '../api/idempotency.js';
 import { useLive } from '../context/LiveContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ import { printSaleReceipt } from '../utils/receipt';
 import { Icons } from '../components/Icons';
 import Amount from '../components/Amount';
 import ReturnModal from '../components/ReturnModal';
+import { bestDiscounts } from '../utils/promotions';
 
 function newLine(item, variant) {
   return {
@@ -116,7 +117,20 @@ function PosScreen({ onDone }) {
     });
   }, [catalog, category, search]);
 
-  const subtotal = cart.reduce((sum, l) => sum + l.quantity * Number(l.unit_price || 0), 0);
+  const [promotions, setPromotions] = useState([]);
+  useEffect(() => {
+    promotionsApi.list({ active: 1 }).then(({ data }) => setPromotions(data.results || data)).catch(() => {});
+  }, []);
+  // Same rules as the till and the server (utils/promotions.js); `item` is the product id here.
+  const lineDiscounts = useMemo(
+    () => bestDiscounts(cart.map((l) => ({ product_id: l.item, category: l.category, quantity: l.quantity, unit_price: l.unit_price })), promotions.map((p) => ({ ...p, item_id: p.item })), new Date()),
+    [cart, promotions],
+  );
+  const promoName = (id) => promotions.find((p) => String(p.id) === String(id))?.name || 'Promotion';
+  const discountTotal = Math.round(lineDiscounts.reduce((t, d) => t + d.discount, 0) * 100) / 100;
+  const grossTotal = cart.reduce((sum, l) => sum + l.quantity * Number(l.unit_price || 0), 0);
+  // What the customer pays. Named `subtotal` because every payment control below already uses it.
+  const subtotal = Math.round((grossTotal - discountTotal) * 100) / 100;
   const cartCount = cart.reduce((n, l) => n + l.quantity, 0);
 
   function addItem(item, variant) {
@@ -238,7 +252,9 @@ function PosScreen({ onDone }) {
         customer_name: customerName || 'Walk-in',
         payment_method: paymentMethod,
         status: installment ? 'outstanding' : 'completed',
-        items: cart.map((l) => ({
+        items: cart.map((l, idx) => ({
+          discount: lineDiscounts[idx].discount,
+          promotion: lineDiscounts[idx].promotion_id,
           item: l.item,
           variant: l.variant,
           variant_label: l.variant_label,
@@ -347,7 +363,7 @@ function PosScreen({ onDone }) {
         <div className="cart-items">
           {cart.length === 0 ? (
             <div className="cart-empty">Tap a product to add it to the cart.</div>
-          ) : cart.map((l) => (
+          ) : cart.map((l, idx) => (
             <div className="cart-line" key={l.key}>
               <div className="cart-line-info">
                 <div className="cart-line-name" title={l.item_name}>
@@ -362,7 +378,12 @@ function PosScreen({ onDone }) {
                 <span>{l.quantity}</span>
                 <button type="button" onClick={() => updateQty(l.key, 1)}>{Icons.plus}</button>
               </div>
-              <div className="cart-line-total num">{money(l.quantity * l.unit_price)}</div>
+              <div className="cart-line-total num">
+                {money(l.quantity * l.unit_price - (lineDiscounts[idx]?.discount || 0))}
+                {lineDiscounts[idx]?.discount > 0 && (
+                  <div style={{ fontSize: 11, color: 'var(--good)', fontWeight: 500 }}>{promoName(lineDiscounts[idx].promotion_id)} −{money(lineDiscounts[idx].discount)}</div>
+                )}
+              </div>
               <button className="cart-line-remove" onClick={() => removeLine(l.key)} aria-label="Remove">{Icons.x}</button>
             </div>
           ))}
@@ -386,6 +407,11 @@ function PosScreen({ onDone }) {
             <div className="field" style={{ marginBottom: 4 }}>
               <label>Amount paid now (₦)</label>
               <input type="number" min="0" max={subtotal} value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="0" />
+            </div>
+          )}
+          {discountTotal > 0 && (
+            <div className="cart-totals-row" style={{ color: 'var(--good)' }}>
+              <span>Promotions</span><span className="num">−{money(discountTotal)}</span>
             </div>
           )}
           <div className="cart-totals-row grand">

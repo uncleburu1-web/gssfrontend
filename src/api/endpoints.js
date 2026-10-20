@@ -26,6 +26,13 @@ export const transfers = {
   create: (data) => client.post('/inventory/transfers/', data),
 };
 
+export const promotions = {
+  list: (params) => client.get('/promotions/', { params }),
+  create: (data) => client.post('/promotions/', data),
+  update: (id, data) => client.patch(`/promotions/${id}/`, data),
+  remove: (id) => client.delete(`/promotions/${id}/`),
+};
+
 export const shifts = {
   list: (params) => client.get('/shifts/', { params }),
   get: (id) => client.get(`/shifts/${id}/`),

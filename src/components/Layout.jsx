@@ -86,6 +86,7 @@ export default function Layout() {
     ...(isOwner || capabilities.manage_expenses ? [{ to: '/app/expenses', label: 'Expenses', mobileLabel: 'Expenses', icon: Icons.billing }] : []),
     ...(isOwner ? OWNER_ONLY_NAV_ITEMS : []),
     ...(isOwner ? [{ to: '/app/audit', label: 'Audit log', mobileLabel: 'Audit', icon: Icons.reports }] : []),
+    ...(isOwner ? [{ to: '/app/promotions', label: 'Promotions', mobileLabel: 'Promos', icon: Icons.billing }] : []),
     ...(isCeo ? CEO_NAV_ITEMS : canPay ? CEO_NAV_ITEMS.filter((i) => /billing/.test(i.to)) : []),
     ...(isOwner ? [SETTINGS_NAV_ITEM] : []),
   ];
