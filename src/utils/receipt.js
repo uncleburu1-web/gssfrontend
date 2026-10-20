@@ -1,4 +1,4 @@
-import { money } from './format';
+import { money, methodLabel } from './format';
 
 // Falls back to these only if the caller doesn't pass real shop info —
 // callers (Sales.jsx) pass the logged-in user's own shop details instead,
@@ -43,9 +43,7 @@ export function printSaleReceipt(sale, shopInput = {}) {
   };
 
   const isCash = sale.payment_method === 'cash';
-  const paymentLabel = sale.payment_method === 'pos'
-    ? 'POS/Card'
-    : (sale.payment_method || 'cash')[0].toUpperCase() + (sale.payment_method || 'cash').slice(1);
+  const paymentLabel = methodLabel(sale.payment_method || 'cash');
 
   const items = sale.items && sale.items.length ? sale.items : [
     { quantity: sale.quantity, item_name: sale.item_name, unit_price: sale.unit_price, total: sale.total },

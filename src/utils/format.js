@@ -47,3 +47,10 @@ export function fmtDateTime(d) {
     dt.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   );
 }
+
+// Every payment method a sale can be paid with (server: sales.models.Sale.PAYMENT_CHOICES).
+export const PAYMENT_METHODS = ['cash', 'transfer', 'pos', 'mobile'];
+export const METHOD_LABEL = { cash: 'Cash', transfer: 'Transfer', pos: 'POS/Card', mobile: 'Mobile money', other: 'Other' };
+export function methodLabel(m) {
+  return METHOD_LABEL[m] || (m ? m[0].toUpperCase() + m.slice(1) : 'Cash');
+}

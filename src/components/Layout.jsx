@@ -52,6 +52,7 @@ const SETTINGS_NAV_ITEM = { to: '/app/settings', label: 'Settings', mobileLabel:
 // manager's "owner within my branch" authority deliberately doesn't
 // extend to it, so this is CEO-only, not owner-only.
 const CEO_NAV_ITEMS = [
+  { to: '/app/transfers', label: 'Move stock', mobileLabel: 'Move', icon: Icons.inventory },
   { to: '/app/billing', label: 'Billing', mobileLabel: 'Billing', icon: Icons.billing },
 ];
 
@@ -85,6 +86,7 @@ export default function Layout() {
     ...(isOwner || capabilities.manage_expenses ? [{ to: '/app/expenses', label: 'Expenses', mobileLabel: 'Expenses', icon: Icons.billing }] : []),
     ...(isOwner ? OWNER_ONLY_NAV_ITEMS : []),
     ...(isOwner ? [{ to: '/app/audit', label: 'Audit log', mobileLabel: 'Audit', icon: Icons.reports }] : []),
+    ...(isOwner ? [{ to: '/app/promotions', label: 'Promotions', mobileLabel: 'Promos', icon: Icons.billing }] : []),
     ...(isCeo ? CEO_NAV_ITEMS : canPay ? CEO_NAV_ITEMS.filter((i) => /billing/.test(i.to)) : []),
     ...(isOwner ? [SETTINGS_NAV_ITEM] : []),
   ];
