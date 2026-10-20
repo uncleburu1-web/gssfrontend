@@ -58,7 +58,7 @@ export function printSaleReceipt(sale, shopInput = {}) {
   const itemRows = items.map((item) => `
     <div class="receipt-item">
       <div class="receipt-row"><span>${escapeHtml(item.item_name)}</span><span>${money(item.total)}</span></div>
-      <div class="receipt-row receipt-item-sub"><span>${item.quantity} Units x ${money(item.unit_price)} / Units</span></div>
+      <div class="receipt-row receipt-item-sub"><span>${Number(item.quantity) % 1 ? `${Number(item.quantity).toFixed(3)} kg x ${money(item.unit_price)} / kg` : `${item.quantity} Units x ${money(item.unit_price)} / Units`}</span></div>
     </div>`).join('');
 
   const html = `<!DOCTYPE html>

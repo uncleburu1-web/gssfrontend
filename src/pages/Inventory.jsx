@@ -32,7 +32,7 @@ const NAME_PLACEHOLDER = {
   general: 'e.g. Indomie Noodles (carton)',
 };
 
-const emptyItemForm = { name: '', short_code: '', barcode: '', category: 'other', brand: '', unit: 'PIECE', spec: '', min_stock: 2, prescription_required: false };
+const emptyItemForm = { name: '', short_code: '', barcode: '', category: 'other', brand: '', unit: 'PIECE', spec: '', min_stock: 2, prescription_required: false, sold_by_weight: false };
 const emptyBatchForm = { batch_number: '', quantity_received: '', cost_price: '', selling_price: '', expiry_date: '', supplier_name: '', variant: '' };
 const emptyVariantForm = { size: '', color: '', sku: '' };
 
@@ -354,7 +354,7 @@ export default function Inventory() {
                     </div>
                     <div className="stock-card-figures">
                       <div>
-                        <div className="num" style={{ fontWeight: 700, fontSize: 16 }}>{i.quantity}</div>
+                        <div className="num" style={{ fontWeight: 700, fontSize: 16 }}>{i.sold_by_weight ? `${Number(i.quantity).toFixed(3)} kg` : i.quantity}</div>
                         <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>units left</div>
                       </div>
                       <div>
@@ -520,9 +520,16 @@ export default function Inventory() {
               </div>
               <div className="field-row">
                 <div className="field">
-                  <label>Reorder at (units)</label>
+                  <label>Reorder at ({itemForm.sold_by_weight ? 'kg' : 'units'})</label>
                   <input required type="number" min="0" value={itemForm.min_stock} onChange={(e) => setItemForm({ ...itemForm, min_stock: e.target.value })} />
                 </div>
+              </div>
+              <div className="field">
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={!!itemForm.sold_by_weight}
+                    onChange={(e) => setItemForm({ ...itemForm, sold_by_weight: e.target.checked, unit: e.target.checked ? 'KG' : (itemForm.unit === 'KG' ? 'PIECE' : itemForm.unit) })} />
+                  Sold by weight (kg) — prices are per kg and the cashier enters the weight
+                </label>
               </div>
               {pharmacyEnabled && (
                 <div className="field">
@@ -569,7 +576,7 @@ export default function Inventory() {
               <div className="field-row">
                 <div className="field">
                   <label>Quantity received</label>
-                  <input required type="number" min="1" value={batchForm.quantity_received} onChange={(e) => setBatchForm({ ...batchForm, quantity_received: e.target.value })} />
+                  <input required type="number" min={batchModalItem?.sold_by_weight ? '0.001' : '1'} step={batchModalItem?.sold_by_weight ? '0.001' : '1'} value={batchForm.quantity_received} onChange={(e) => setBatchForm({ ...batchForm, quantity_received: e.target.value })} />
                   {editingBatch && (
                     <div style={{ fontSize: 11.5, color: 'var(--text-dim)', marginTop: 4 }}>
                       {editingBatch.quantity_received - editingBatch.quantity_remaining} already sold from this batch

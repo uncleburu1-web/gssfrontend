@@ -22,6 +22,7 @@ function newLine(item, variant) {
     unit_price: item ? Number(item.sell_price) : 0,
     unit_cost: item ? Number(item.cost_price) : 0,
     maxQty: variant ? variant.quantity : (item ? item.quantity : null),
+    by_weight: Boolean(item && item.sold_by_weight),
   };
 }
 
@@ -131,7 +132,7 @@ function PosScreen({ onDone }) {
   const grossTotal = cart.reduce((sum, l) => sum + l.quantity * Number(l.unit_price || 0), 0);
   // What the customer pays. Named `subtotal` because every payment control below already uses it.
   const subtotal = Math.round((grossTotal - discountTotal) * 100) / 100;
-  const cartCount = cart.reduce((n, l) => n + l.quantity, 0);
+  const cartCount = cart.reduce((n, l) => n + (l.by_weight ? 1 : Number(l.quantity) || 0), 0); // a weighed line counts as one item
 
   function addItem(item, variant) {
     const key = variant ? `stock-${item.id}-${variant.id}` : `stock-${item.id}`;
@@ -157,6 +158,10 @@ function PosScreen({ onDone }) {
   const [variantPickerLoading, setVariantPickerLoading] = useState(false);
 
   function handleProductTap(item) {
+    if (item.sold_by_weight) {
+      setWeighing({ item, kg: '' });
+      return;
+    }
     if (!item.has_variants) {
       addItem(item);
       return;
@@ -223,6 +228,23 @@ function PosScreen({ onDone }) {
     setCustomOpen(false);
   }
 
+  // Products sold by weight: the cashier enters the kg (to the gram) before the line is added.
+  const [weighing, setWeighing] = useState(null);
+  const q3 = (n) => Math.round(Number(n) * 1000) / 1000;
+  function addWeighed() {
+    const kg = q3(weighing.kg);
+    if (!(kg > 0)) return;
+    if (weighing.item.quantity != null && kg > weighing.item.quantity) {
+      setError(`Only ${weighing.item.quantity} kg of ${weighing.item.name} in stock.`);
+      return;
+    }
+    setCart((prev) => [...prev, { ...newLine(weighing.item), key: `weigh-${weighing.item.id}-${Date.now()}`, quantity: kg }]);
+    setWeighing(null);
+  }
+  function updateWeight(key, value) {
+    setCart((prev) => prev.map((l) => (l.key === key ? { ...l, quantity: value === '' ? '' : q3(value) } : l)));
+  }
+
   function updateQty(key, delta) {
     setCart((prev) => prev
       .map((l) => {
@@ -245,6 +267,10 @@ function PosScreen({ onDone }) {
 
   async function charge() {
     if (cart.length === 0 || submitting) return;
+    if (cart.some((l) => !(Number(l.quantity) > 0))) {
+      setError('Every line needs a quantity — enter the weight for weighed items.');
+      return;
+    }
     setError('');
     setSubmitting(true);
     try {
@@ -370,14 +396,21 @@ function PosScreen({ onDone }) {
                   {l.item_name}{l.variant_label ? ` — ${l.variant_label}` : ''}
                 </div>
                 <div className="cart-line-price">
-                  ₦<input type="number" value={l.unit_price} onChange={(e) => updatePrice(l.key, e.target.value)} /> each
+                  ₦<input type="number" value={l.unit_price} onChange={(e) => updatePrice(l.key, e.target.value)} /> {l.by_weight ? 'per kg' : 'each'}
                 </div>
               </div>
-              <div className="qty-stepper">
-                <button type="button" onClick={() => updateQty(l.key, -1)}>{Icons.minus}</button>
-                <span>{l.quantity}</span>
-                <button type="button" onClick={() => updateQty(l.key, 1)}>{Icons.plus}</button>
-              </div>
+              {l.by_weight ? (
+                <div className="qty-stepper" title="Weight in kg">
+                  <input type="number" min="0.001" step="0.001" style={{ width: 70 }} value={l.quantity}
+                    onChange={(e) => updateWeight(l.key, e.target.value)} /> kg
+                </div>
+              ) : (
+                <div className="qty-stepper">
+                  <button type="button" onClick={() => updateQty(l.key, -1)}>{Icons.minus}</button>
+                  <span>{l.quantity}</span>
+                  <button type="button" onClick={() => updateQty(l.key, 1)}>{Icons.plus}</button>
+                </div>
+              )}
               <div className="cart-line-total num">
                 {money(l.quantity * l.unit_price - (lineDiscounts[idx]?.discount || 0))}
                 {lineDiscounts[idx]?.discount > 0 && (
@@ -439,6 +472,33 @@ function PosScreen({ onDone }) {
               <button type="button" className="btn ghost" onClick={() => setCustomOpen(false)}>Cancel</button>
               <button type="button" className="btn" onClick={addCustom}>Add to cart</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {weighing && (
+        <div className="modal-backdrop" onClick={() => setWeighing(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Weigh — {weighing.item.name}</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: -8 }}>
+              {money(weighing.item.sell_price)} per kg · {weighing.item.quantity} kg in stock
+            </p>
+            <form onSubmit={(e) => { e.preventDefault(); addWeighed(); }}>
+              <div className="field">
+                <label>Weight (kg)</label>
+                <input required autoFocus type="number" min="0.001" step="0.001" value={weighing.kg}
+                  onChange={(e) => setWeighing({ ...weighing, kg: e.target.value })} placeholder="e.g. 1.250" />
+              </div>
+              {Number(weighing.kg) > 0 && (
+                <div style={{ fontSize: 14, marginBottom: 8 }}>
+                  {Number(weighing.kg).toFixed(3)} kg = <b>{money(Math.round(Number(weighing.kg) * weighing.item.sell_price * 100) / 100)}</b>
+                </div>
+              )}
+              <div className="modal-actions">
+                <button type="button" className="btn ghost" onClick={() => setWeighing(null)}>Cancel</button>
+                <button type="submit" className="btn">Add to cart</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

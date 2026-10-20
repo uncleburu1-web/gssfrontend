@@ -115,7 +115,7 @@ export default function StockLedgerPanel({ item, detail, isOwner, onChanged }) {
               )}
               <div className="field">
                 <label>{mode === 'damage' ? 'Quantity damaged' : 'Counted quantity'}</label>
-                <input required autoFocus type="number" min={mode === 'damage' ? 1 : 0} step="1" value={form.quantity}
+                <input required autoFocus type="number" min={mode === 'damage' ? (item.sold_by_weight ? 0.001 : 1) : 0} step={item.sold_by_weight ? '0.001' : '1'} value={form.quantity}
                   onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               </div>
               <div className="field">

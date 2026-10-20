@@ -24,22 +24,26 @@ export function matches(p, line) {
   return Boolean(line.product_id) && String(p.item_id) === String(line.product_id);
 }
 
-/** Discount in kobo. */
+/**
+ * Discount in kobo. Quantities may be kg (3 decimals) for weighed products: % off and amount-off-each
+ * (per kg) apply to the exact weight; buy-X-get-Y counts whole units only. Grams keep it exact.
+ */
 function discountKobo(p, line) {
-  const qty = Math.floor(Number(line.quantity) || 0);
+  const grams = Math.round((Number(line.quantity) || 0) * 1000);
   const price = kobo(line.unit_price);
-  if (qty <= 0 || price <= 0) return 0;
-  const gross = price * qty;
+  if (grams <= 0 || price <= 0) return 0;
+  const gross = Math.round((price * grams) / 1000);
   if (p.kind === 'buy_x_get_y') {
     const buy = Number(p.buy_quantity) || 0;
     const get = Number(p.get_quantity) || 0;
     if (buy <= 0 || get <= 0) return 0;
-    return Math.min(gross, price * Math.floor(qty / (buy + get)) * get);
+    const units = Math.floor(grams / 1000);
+    return Math.min(gross, price * Math.floor(units / (buy + get)) * get);
   }
-  if (qty < (Number(p.min_quantity) || 1)) return 0;
+  if (grams < (Number(p.min_quantity) || 1) * 1000) return 0;
   const value = Number(p.value) || 0;
   if (p.kind === 'percent_off') return Math.round((gross * Math.min(Math.max(value, 0), 100)) / 100);
-  if (p.kind === 'amount_off') return Math.min(gross, kobo(Math.max(value, 0)) * qty);
+  if (p.kind === 'amount_off') return Math.min(gross, Math.round((kobo(Math.max(value, 0)) * grams) / 1000));
   return 0;
 }
 
