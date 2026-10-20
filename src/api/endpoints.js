@@ -92,6 +92,7 @@ export const sales = {
   remove: (id) => client.delete(`/sales/${id}/`),
   addPayment: (id, amount, config) => client.post(`/sales/${id}/add-payment/`, { amount }, config),
   replaceItem: (id, data) => client.post(`/sales/${id}/replace-item/`, data),
+  takeReturn: (id, data, config) => client.post(`/sales/${id}/return/`, data, config),
 };
 
 export const workers = {
