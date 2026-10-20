@@ -13,3 +13,9 @@ item = InventoryItem.objects.create(shop=shop, name='Palm Oil 1L', sell_price=25
 StockBatch.objects.create(item=item, shop=shop, batch_number='B1', quantity_received=20, quantity_remaining=20, cost_price=1800, selling_price=2500)
 get_or_create_subscription(org)
 print('seeded', item.id)
+
+# Stages 7-10: a second branch (moving stock) and a second owner account (owner role, not the
+# registered business owner) used by gssdesktop/e2e/till-e2e2.cjs.
+Shop.objects.get_or_create(name='E2E Lekki', organization=org)
+co = User.objects.create_user(username='coowner', password='pass12345')
+Worker.objects.create(user=co, full_name='Co Owner', role='owner', shop=shop)
