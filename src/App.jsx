@@ -6,6 +6,7 @@ import RequireAuth from './components/RequireAuth';
 import RequireOwner from './components/RequireOwner';
 import RequireCapability from './components/RequireCapability';
 import RequireCeo from './components/RequireCeo';
+import RequireCanPay from './components/RequireCanPay';
 import RequireService from './components/RequireService';
 import Layout from './components/Layout';
 import Landing from './pages/Landing';
@@ -62,7 +63,7 @@ export default function App() {
             <Route path="attendance" element={<Attendance />} />
             <Route path="shifts" element={<Shifts />} />
             <Route path="audit" element={<AuditLog />} />
-            <Route path="billing" element={<RequireCeo><Billing /></RequireCeo>} />
+            <Route path="billing" element={<RequireCanPay><Billing /></RequireCanPay>} />
             <Route path="settings" element={<RequireOwner><Settings /></RequireOwner>} />
             <Route path="branches/new" element={<RequireCeo><BranchCreate /></RequireCeo>} />
             <Route path="receipt-setup" element={<RequireCeo><ReceiptSetup /></RequireCeo>} />
