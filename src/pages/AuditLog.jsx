@@ -53,7 +53,16 @@ export default function AuditLog() {
                     <tr key={r.id}>
                       <td className="mono">{fmtDateTime(r.at)}</td>
                       <td>{r.actor_name || 'System'}{r.source === 'till' ? ' (till)' : ''}</td>
-                      <td>{r.summary || r.action}</td>
+                      <td>
+                        {r.summary || r.action}
+                        {r.data?.changes && Object.keys(r.data.changes).length > 0 && (
+                          <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                            {Object.entries(r.data.changes).map(([field, [before, after]]) => (
+                              <div key={field}>{field.replace(/_/g, ' ')}: <s>{before ?? '—'}</s> → <strong>{after ?? '—'}</strong></div>
+                            ))}
+                          </div>
+                        )}
+                      </td>
                       <td>{r.reason || '—'}</td>
                       <td>{r.shop_name || '—'}</td>
                     </tr>

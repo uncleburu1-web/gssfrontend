@@ -454,7 +454,7 @@ function ByStaffReport({ data }) {
 
 function PaymentMethodReport({ data }) {
   if (!data.rows.length) return <div className="empty">No sales in this period.</div>;
-  const labels = { cash: 'Cash', transfer: 'Transfer', pos: 'POS/Card' };
+  const labels = { cash: 'Cash', transfer: 'Transfer', pos: 'POS/Card', mobile: 'Mobile money' };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       {data.rows.map((r, i) => (

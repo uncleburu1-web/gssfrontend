@@ -123,6 +123,7 @@ function ShiftDetail({ shift, onClose }) {
                 <tr><td>Cash taken</td><td>{money(byMethod.cash || 0)}</td></tr>
                 <tr><td>Transfer</td><td>{money(byMethod.transfer || 0)}</td></tr>
                 <tr><td>Card (POS)</td><td>{money(byMethod.pos || 0)}</td></tr>
+                {byMethod.mobile ? <tr><td>Mobile money</td><td>{money(byMethod.mobile)}</td></tr> : null}
                 <tr><td>Opening float</td><td>{money(r.cash?.opening_float ?? shift.opening_float)}</td></tr>
                 <tr><td>Paid in / out</td><td>{money(r.cash?.paid_in || 0)} / {money(r.cash?.paid_out || 0)}</td></tr>
                 <tr><td>Expected cash</td><td>{money(r.cash?.expected ?? 0)}</td></tr>

@@ -3,7 +3,7 @@ import { sales, inventory } from '../api/endpoints';
 import { newIdempotencyKey } from '../api/idempotency.js';
 import { useLive } from '../context/LiveContext';
 import { useAuth } from '../context/AuthContext';
-import { money, fmtDate, apiErrorMessage } from '../utils/format';
+import { money, fmtDate, apiErrorMessage, PAYMENT_METHODS, methodLabel } from '../utils/format';
 import { printSaleReceipt } from '../utils/receipt';
 import { Icons } from '../components/Icons';
 import Amount from '../components/Amount';
@@ -371,9 +371,9 @@ function PosScreen({ onDone }) {
             <input placeholder="Customer (optional — Walk-in)" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
           </div>
           <div className="pay-methods">
-            {['cash', 'transfer', 'pos'].map((m) => (
+            {PAYMENT_METHODS.map((m) => (
               <button key={m} type="button" className={`pay-method ${paymentMethod === m ? 'active' : ''}`} onClick={() => setPaymentMethod(m)}>
-                {m === 'pos' ? 'POS/Card' : m[0].toUpperCase() + m.slice(1)}
+                {methodLabel(m)}
               </button>
             ))}
           </div>
