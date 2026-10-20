@@ -30,6 +30,7 @@ import ReceiptSetup from './pages/ReceiptSetup';
 import Attendance from './pages/Attendance';
 import Shifts from './pages/Shifts';
 import AuditLog from './pages/AuditLog';
+import Transfers from './pages/Transfers';
 
 export default function App() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="attendance" element={<Attendance />} />
             <Route path="shifts" element={<Shifts />} />
             <Route path="audit" element={<AuditLog />} />
+            <Route path="transfers" element={<RequireCeo><Transfers /></RequireCeo>} />
             <Route path="billing" element={<RequireCanPay><Billing /></RequireCanPay>} />
             <Route path="settings" element={<RequireOwner><Settings /></RequireOwner>} />
             <Route path="branches/new" element={<RequireCeo><BranchCreate /></RequireCeo>} />

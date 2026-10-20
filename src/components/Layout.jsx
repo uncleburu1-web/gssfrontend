@@ -52,6 +52,7 @@ const SETTINGS_NAV_ITEM = { to: '/app/settings', label: 'Settings', mobileLabel:
 // manager's "owner within my branch" authority deliberately doesn't
 // extend to it, so this is CEO-only, not owner-only.
 const CEO_NAV_ITEMS = [
+  { to: '/app/transfers', label: 'Move stock', mobileLabel: 'Move', icon: Icons.inventory },
   { to: '/app/billing', label: 'Billing', mobileLabel: 'Billing', icon: Icons.billing },
 ];
 

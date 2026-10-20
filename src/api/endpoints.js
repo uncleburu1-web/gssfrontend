@@ -21,6 +21,11 @@ export const auditLog = {
   list: (params) => client.get('/audit/', { params }),
 };
 
+export const transfers = {
+  list: () => client.get('/inventory/transfers/'),
+  create: (data) => client.post('/inventory/transfers/', data),
+};
+
 export const shifts = {
   list: (params) => client.get('/shifts/', { params }),
   get: (id) => client.get(`/shifts/${id}/`),
