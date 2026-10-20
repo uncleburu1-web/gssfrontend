@@ -71,6 +71,9 @@ export function AuthProvider({ children }) {
       user, loading, login, register, verifyOtp, resendOtp, logout,
       isOwner: !!user?.is_owner,
       isCeo: !!user?.is_ceo,
+      // Who may pay for the subscription: the business's registered owner, or any worker with the
+      // owner role (the server's checkout accepts both). Branch managers and staff cannot.
+      canPay: !!user?.is_ceo || user?.role === 'owner',
       // The worker's actual role string — 'owner' | 'branch_manager' |
       // 'seller' | 'reception' | 'technician' | 'attendant' | 'other'.
       // Prefer a `capabilities.xyz` check over comparing this directly

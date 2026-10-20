@@ -62,7 +62,7 @@ const STAFF_ROLE_LABEL = {
 };
 
 export default function Layout() {
-  const { user, logout, isOwner, isCeo, capabilities, shopName, serviceEnabled } = useAuth();
+  const { user, logout, isOwner, isCeo, canPay, capabilities, shopName, serviceEnabled } = useAuth();
   const { status: liveStatus, versions } = useLive();
   const { theme, toggleTheme } = useTheme();
   // Service (device repair/servicing) only makes sense for businesses that
@@ -85,7 +85,7 @@ export default function Layout() {
     ...(isOwner || capabilities.manage_expenses ? [{ to: '/app/expenses', label: 'Expenses', mobileLabel: 'Expenses', icon: Icons.billing }] : []),
     ...(isOwner ? OWNER_ONLY_NAV_ITEMS : []),
     ...(isOwner ? [{ to: '/app/audit', label: 'Audit log', mobileLabel: 'Audit', icon: Icons.reports }] : []),
-    ...(isCeo ? CEO_NAV_ITEMS : []),
+    ...(isCeo ? CEO_NAV_ITEMS : canPay ? CEO_NAV_ITEMS.filter((i) => /billing/.test(i.to)) : []),
     ...(isOwner ? [SETTINGS_NAV_ITEM] : []),
   ];
 
@@ -161,7 +161,7 @@ export default function Layout() {
           <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
             {/* Subscribe sits beside Log out for whoever can pay (the CEO/owner of the business),
                 whenever they are on the free trial or the subscription has ended. */}
-            {isCeo && sub && (sub.effective_status === 'trial' || !sub.cloud_services_enabled) && (
+            {canPay && sub && (sub.effective_status === 'trial' || !sub.cloud_services_enabled) && (
               <Link to="/app/billing" className="btn small" style={{ flex: 1, justifyContent: 'center', whiteSpace: 'nowrap', textDecoration: 'none' }}>
                 Subscribe
               </Link>
@@ -193,17 +193,17 @@ export default function Layout() {
           return (
             <div className="banner warn" style={{ marginBottom: 18 }}>
               {daysLeft <= 0 ? 'Your free trial ends today.' : `Your free trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}.`}
-              {isCeo && <Link to="/app/billing" style={{ marginLeft: 'auto', fontWeight: 700 }}>Choose a plan →</Link>}
+              {canPay && <Link to="/app/billing" style={{ marginLeft: 'auto', fontWeight: 700 }}>Choose a plan →</Link>}
             </div>
           );
         })()}
-        {subscriptionEnded && isCeo && onBilling && (
+        {subscriptionEnded && canPay && onBilling && (
           <div className="banner warn" style={{ marginBottom: 18 }}>
             {sub.status === 'trial' ? 'Your free trial has ended.' : 'Your subscription has ended.'} Choose a plan below to turn Benchline online back on.
           </div>
         )}
-        {subscriptionEnded && !(isCeo && onBilling)
-          ? <SubscriptionEndedCard sub={sub} isCeo={isCeo} onLogout={logout} />
+        {subscriptionEnded && !(canPay && onBilling)
+          ? <SubscriptionEndedCard sub={sub} isCeo={canPay} onLogout={logout} />
           : <Outlet />}
       </main>
 
