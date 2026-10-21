@@ -56,7 +56,7 @@ export default function ReturnModal({ sale, onClose, onDone }) {
                   <tr key={i.id}>
                     <td>{i.item_name}</td>
                     <td className="num">{i.quantity}{left(i) < i.quantity ? ` (${i.quantity - left(i)} back)` : ''}</td>
-                    <td><input type="number" min="0" max={left(i)} step="1" style={{ width: 70 }} disabled={left(i) <= 0}
+                    <td><input type="number" min="0" max={left(i)} step={i.sold_by_weight ? '0.001' : '1'} style={{ width: 70 }} disabled={left(i) <= 0}
                       value={qty[i.id] ?? ''} onChange={(e) => setQty({ ...qty, [i.id]: e.target.value })} /></td>
                     <td style={{ textAlign: 'center' }}>
                       <input type="checkbox" title="Damaged: write it off instead of putting it back in stock"

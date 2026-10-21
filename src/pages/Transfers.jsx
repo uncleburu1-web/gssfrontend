@@ -52,7 +52,7 @@ export default function Transfers() {
         .map((v) => ({ item: item.id, variant: v.id, label: `${item.name} — ${v.label}`, quantity: '', max: v.quantity }));
       setLines([...lines, ...add]);
     } else if (!lines.some((l) => l.item === item.id)) {
-      setLines([...lines, { item: item.id, variant: null, label: item.name, quantity: '', max: item.quantity }]);
+      setLines([...lines, { item: item.id, variant: null, label: item.sold_by_weight ? `${item.name} (kg)` : item.name, quantity: '', max: item.quantity, by_weight: item.sold_by_weight }]);
     }
   }
 
@@ -131,7 +131,7 @@ export default function Transfers() {
                     <tr key={`${l.item}-${l.variant || ''}`}>
                       <td>{l.label}</td>
                       <td className="num">{l.max}</td>
-                      <td><input type="number" min="1" max={l.max} step="1" style={{ width: 80 }} value={l.quantity}
+                      <td><input type="number" min={l.by_weight ? '0.001' : '1'} max={l.max} step={l.by_weight ? '0.001' : '1'} style={{ width: 80 }} value={l.quantity}
                         onChange={(e) => setLines(lines.map((x, j) => (j === idx ? { ...x, quantity: e.target.value } : x)))} /></td>
                       <td><button type="button" className="btn ghost small" onClick={() => setLines(lines.filter((_, j) => j !== idx))}>Remove</button></td>
                     </tr>
