@@ -182,3 +182,47 @@ export const reports = {
   netWorth: () => client.get('/reports/net-worth/'),
 };
 
+
+// ---- Restaurant (branches with the restaurant module; gss restaurant/urls.py) ----------------------
+const crud = (path) => ({
+  list: (params) => client.get(`/restaurant/${path}/`, { params }),
+  create: (data) => client.post(`/restaurant/${path}/`, data),
+  update: (id, data) => client.patch(`/restaurant/${path}/${id}/`, data),
+  remove: (id) => client.delete(`/restaurant/${path}/${id}/`),
+});
+export const restaurant = {
+  areas: crud('areas'),
+  tables: crud('tables'),
+  stations: crud('stations'),
+  categories: crud('menu/categories'),
+  items: crud('menu/items'),
+  modifierGroups: crud('menu/modifier-groups'),
+  modifierOptions: crud('menu/modifier-options'),
+  itemModifierGroups: crud('menu/item-modifier-groups'),
+  taxRules: crud('tax-rules'),
+  activateTaxes: (data) => client.post('/restaurant/tax-rules/activate/', data),
+  settings: () => client.get('/restaurant/settings/'),
+  saveSettings: (data) => client.put('/restaurant/settings/', data),
+  setHub: (deviceId) => client.put('/restaurant/settings/hub/', { device_id: deviceId }),
+  routingPreview: (items) => client.post('/restaurant/routing/preview/', { items }),
+  orders: (params) => client.get('/restaurant/orders/', { params }),
+  order: (id) => client.get(`/restaurant/orders/${id}/`),
+  summary: (params) => client.get('/reports/restaurant/summary/', { params }),
+};
+
+/** Every row of a paginated list (restaurant lists page at 50; a menu can be longer). */
+export async function listAll(api, params = {}) {
+  const out = [];
+  for (let page = 1; page < 100; page += 1) {
+    const { data } = await api.list({ ...params, page });
+    if (Array.isArray(data)) return data;
+    out.push(...(data.results || []));
+    if (!data.next) break;
+  }
+  return out;
+}
+
+export const branchModules = {
+  get: (branchId) => client.get(`/branches/${branchId}/modules/`),
+  set: (branchId, modules) => client.put(`/branches/${branchId}/modules/`, { modules }),
+};

@@ -93,6 +93,12 @@ export function AuthProvider({ children }) {
       shopName: user?.shop_name || 'My Shop',
       shopLogoUrl: user?.shop_logo_url || '',
       serviceEnabled: !!user?.service_enabled,
+      // Branch modules (retail / restaurant / service) of the branch being VIEWED, and the features of
+      // the business's package (gss core/modules.py). /me's `modules` are the user's own branch; a CEO
+      // switching branches (Layout's switcher, which reloads the page) needs that branch's entry in
+      // `branch_modules`. Older servers send neither: no restaurant.
+      ...branchView(user),
+      features: user?.features || [],
       pharmacyEnabled: !!user?.pharmacy_enabled,
       businessType: user?.business_type || 'general',
       // [{ value, label }, ...] already scoped to this org's business_type
@@ -105,6 +111,21 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+function branchView(user) {
+  let viewing = '';
+  try { viewing = localStorage.getItem('current_branch_id') || ''; } catch { viewing = ''; }
+  const map = user?.branch_modules || {};
+  const modules = (viewing && map[viewing]) || user?.modules || [];
+  return {
+    viewingBranchId: viewing,
+    modules,
+    restaurantEnabled: modules.includes('restaurant'),
+    // A CEO on "All branches" works in no single branch: restaurant set-up needs one picked first.
+    allBranchesView: Boolean(user?.is_ceo && !viewing && Object.keys(map).length > 1),
+    anyRestaurant: Object.values(map).some((m) => m.includes('restaurant')) || (user?.modules || []).includes('restaurant'),
+  };
 }
 
 export function useAuth() {
