@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { auth as authApi, branches as branchesApi, devices as devicesApi, subscription as subscriptionApi, controlCenter as controlCenterApi } from '../api/endpoints';
+import { auth as authApi, branches as branchesApi, devices as devicesApi, subscription as subscriptionApi, controlCenter as controlCenterApi, branchModules } from '../api/endpoints';
 import { Icons } from '../components/Icons';
 
 function extractError(err, fallback) {
@@ -49,6 +49,7 @@ export default function Settings() {
       <AppDownloadsSection />
       {isCeo && <ReceiptSection />}
       {isCeo && <BranchesSection />}
+      <BranchModulesSection />
       {isCeo && <ControlCenterSection />}
       <DevicesSection />
     </div>
@@ -183,6 +184,80 @@ function ChangePasswordCard() {
         <button type="submit" className="btn small" disabled={saving}>{saving ? 'Saving…' : 'Update password'}</button>
       </div>
     </form>
+  );
+}
+
+const MODULE_LABELS = [
+  ['retail', 'Supermarket / shop', 'Products, stock and the till as today.'],
+  ['restaurant', 'Restaurant', 'Menu, tables, kitchen tickets and screens, run from one hub till.'],
+  ['service', 'Repairs / service', 'Device repair jobs.'],
+];
+
+/** Which modules each branch uses (gss branches/views.py BranchModulesView). The package decides
+ * which can be switched on; switching off is always allowed and nothing already recorded is lost. */
+function BranchModulesSection() {
+  const { isCeo, user, shopName, refreshUser } = useAuth();
+  const [rows, setRows] = useState(null);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState('');
+
+  async function load() {
+    try {
+      let list = [{ id: user?.shop_id, name: shopName }];
+      if (isCeo) { const { data } = await branchesApi.list(); list = data.results || data; }
+      const states = await Promise.all(list.filter((b) => b.id && b.status !== 'archived').map(async (b) => ({ ...b, ...(await branchModules.get(b.id)).data })));
+      setRows(states);
+    } catch (err) {
+      setRows([]);
+      if (err?.response?.status !== 404) setError(extractError(err, 'Could not load what each branch does.'));
+    }
+  }
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function flip(branch, module) {
+    setError(''); setBusy(`${branch.id}:${module}`);
+    try {
+      await branchModules.set(branch.id, { [module]: !branch.modules[module] });
+      await load();
+      await refreshUser();
+    } catch (err) {
+      setError(extractError(err, 'Could not change this.'));
+    } finally { setBusy(''); }
+  }
+
+  if (rows !== null && rows.length === 0 && !error) return null; // an older server without modules
+  return (
+    <div className="section">
+      <div className="section-head"><h3>What each branch does</h3></div>
+      <div className="section-body">
+        {error && <div className="form-error">{error}</div>}
+        {rows === null ? <div className="empty">Loading…</div> : (
+          <table>
+            <thead><tr><th>Branch</th>{MODULE_LABELS.map(([m, label]) => <th key={m}>{label}</th>)}</tr></thead>
+            <tbody>
+              {rows.map((b) => (
+                <tr key={b.id}>
+                  <td>{b.name}</td>
+                  {MODULE_LABELS.map(([m, label, hint]) => {
+                    const on = Boolean(b.modules && b.modules[m]);
+                    const allowed = on || Boolean(b.available && b.available[m]);
+                    return (
+                      <td key={m} title={allowed ? hint : 'Not in your package. Change the plan under Billing.'}>
+                        <label style={{ display: 'flex', gap: 6, alignItems: 'center', textTransform: 'none', fontSize: 13, color: 'var(--text)', letterSpacing: 0, margin: 0 }}>
+                          <input type="checkbox" style={{ width: 'auto' }} aria-label={`${label} at ${b.name}`} checked={on} disabled={!allowed || busy === `${b.id}:${m}`} onChange={() => flip(b, m)} />
+                          {on ? 'On' : allowed ? 'Off' : 'Not in plan'}
+                        </label>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        <div className="field-hint" style={{ marginTop: 8 }}>A branch can be a supermarket and a restaurant at once. Switching something off hides it; nothing already recorded is deleted.</div>
+      </div>
+    </div>
   );
 }
 

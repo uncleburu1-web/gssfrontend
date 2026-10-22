@@ -63,7 +63,7 @@ const STAFF_ROLE_LABEL = {
 };
 
 export default function Layout() {
-  const { user, logout, isOwner, isCeo, canPay, capabilities, shopName, serviceEnabled } = useAuth();
+  const { user, logout, isOwner, isCeo, canPay, capabilities, shopName, serviceEnabled, restaurantEnabled, allBranchesView, anyRestaurant } = useAuth();
   const { status: liveStatus, versions } = useLive();
   const { theme, toggleTheme } = useTheme();
   // Service (device repair/servicing) only makes sense for businesses that
@@ -76,6 +76,8 @@ export default function Layout() {
     : [...BASE_NAV_ITEMS, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM];
   const items = [
     ...coreItems,
+    // Restaurant branches: menu, tables, kitchen, taxes, hub and restaurant reports (owners).
+    ...((restaurantEnabled || (allBranchesView && anyRestaurant)) && isOwner ? [{ to: '/app/restaurant', label: 'Restaurant', mobileLabel: 'Restaurant', icon: Icons.store }] : []),
     // isOwner already implies every one of these capabilities too (see
     // core.capabilities.has_capability's owner/branch-manager bypass) —
     // the capability check alone would be enough, but keeping `isOwner ||`

@@ -32,6 +32,7 @@ import Shifts from './pages/Shifts';
 import AuditLog from './pages/AuditLog';
 import Transfers from './pages/Transfers';
 import Promotions from './pages/Promotions';
+import Restaurant from './pages/restaurant/Restaurant';
 
 export default function App() {
   return (
@@ -67,6 +68,7 @@ export default function App() {
             <Route path="audit" element={<AuditLog />} />
             <Route path="transfers" element={<RequireCeo><Transfers /></RequireCeo>} />
             <Route path="promotions" element={<Promotions />} />
+            <Route path="restaurant" element={<RequireOwner><Restaurant /></RequireOwner>} />
             <Route path="billing" element={<RequireCanPay><Billing /></RequireCanPay>} />
             <Route path="settings" element={<RequireOwner><Settings /></RequireOwner>} />
             <Route path="branches/new" element={<RequireCeo><BranchCreate /></RequireCeo>} />
