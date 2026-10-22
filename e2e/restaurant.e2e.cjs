@@ -4,11 +4,13 @@
  * "E2E Store" a restaurant through the API and uploads a real closed order from a hub till.
  *
  * Here the CEO, in the browser:
- *   - switches the restaurant on for the second branch, "E2E Lekki", in Settings;
+ *   - turns the second branch, "E2E Lekki", into a restaurant by changing its kind of shop in
+ *     Settings (it was general retail): its menus, stock categories and dashboard follow;
  *   - builds its whole set-up through the forms: stations, categories, items, a required choice
  *     linked to an item, an area and tables, the service charge, VAT activated with the safeguards,
  *     a second tax refused as overlapping until confirmed, and the hub till;
  *   - checks the cloud stored exactly that;
+ *   - sees the dashboard's set-up list go once everything is done;
  *   - opens E2E Store's restaurant reports and finds the order the hub uploaded.
  *
  *   PLAYWRIGHT_MODULE=<playwright-core> E2E_CHROMIUM=<chrome> E2E_WEB=http://localhost:5173 \
@@ -50,15 +52,41 @@ async function eventually(fn, ms = 8000) {
     await page.waitForURL('**/app', { timeout: 15000 });
     await page.evaluate((id) => localStorage.setItem('current_branch_id', id), lekki);
 
-    // ---- switch the restaurant on for Lekki ---------------------------------------------------
+    // ---- Lekki becomes a restaurant: its kind of shop, in Settings -------------------------------
     await page.goto(`${WEB}/app/settings`);
-    const box = 'input[aria-label="Restaurant at E2E Lekki"]';
-    check('Settings lists what each branch does', await eventually(() => page.isVisible(box)));
-    check('Lekki starts as a supermarket only', !(await page.isChecked(box)) && await page.isChecked('input[aria-label="Supermarket / shop at E2E Lekki"]'));
-    check('the menu has no Restaurant while viewing Lekki (Store is a restaurant, Lekki is not)', !(await page.isVisible('a[href="/app/restaurant"]')));
-    await page.click(box); // the switch is disabled while it saves, then shows the new state
-    check('the restaurant is switched on for Lekki, and the menu shows Restaurant', await eventually(async () => (await page.isChecked(box)) && page.isVisible('a[href="/app/restaurant"]')));
-    check('the cloud has Lekki as restaurant + retail', sql(`SELECT string_agg(module, ',' ORDER BY module) FROM core_branchmodule WHERE shop_id = '${lekki}' AND enabled`) === 'restaurant,retail');
+    const lekkiRow = 'tr:has-text("E2E Lekki")';
+    check('Settings shows each branch\'s kind of shop; Lekki is general retail',
+      await eventually(async () => (await page.textContent(lekkiRow)).includes('General retail')));
+    check('the menu has no Restaurant while viewing Lekki', !(await page.isVisible('a[href="/app/restaurant"]')));
+    await page.click(`${lekkiRow} button:has-text("Edit")`);
+    await page.selectOption('.modal select[aria-label="Kind of shop"]', 'restaurant');
+    check('the form says what a restaurant gets', (await page.textContent('.modal')).includes('Menu, tables, kitchen tickets'));
+    const dialogs = [];
+    page.on('dialog', (d) => dialogs.push(d.message()));
+    await page.click('.modal button:has-text("Save")');
+    check('Lekki is now a restaurant, and the menu shows Restaurant', await eventually(async () =>
+      (await page.textContent(lekkiRow)).includes('Restaurant & food') && page.isVisible('a[href="/app/restaurant"]')));
+    check('the owner was warned before the change', dialogs.some((m) => m.includes('to Restaurant & food') && m.includes('choose its hub till')), dialogs.join(' | '));
+    check('the cloud: Lekki is a restaurant with restaurant + retail, and the change is in the audit log',
+      sql(`SELECT shop_type FROM core_shop WHERE id = '${lekki}'`) === 'restaurant'
+      && sql(`SELECT string_agg(module, ',' ORDER BY module) FROM core_branchmodule WHERE shop_id = '${lekki}' AND enabled`) === 'restaurant,retail'
+      && sql(`SELECT COUNT(*) FROM audit_auditlog WHERE action = 'branch.type_changed' AND shop_id = '${lekki}'`) === '1');
+    check('E2E Store keeps its own kind (the hub test made it a restaurant)', sql(`SELECT shop_type FROM core_shop WHERE id = '${store}'`) === 'restaurant');
+
+    // ---- what follows from the kind of shop -------------------------------------------------------
+    await page.goto(`${WEB}/app`);
+    check('the dashboard shows the restaurant set-up list for Lekki', await eventually(async () => {
+      const t = await page.textContent('[data-restaurant-start]');
+      return t.includes('Add your menu') && t.includes('Choose the hub till');
+    }));
+    await page.goto(`${WEB}/app/inventory`);
+    await page.click('button:has-text("Add item")');
+    const cats = await page.$$eval('.modal select option', (os) => os.map((o) => o.textContent));
+    check('Lekki\'s stock categories are a restaurant\'s (drinks, ingredients, packs)', cats.includes('Food ingredient') && cats.includes('Packaging / takeaway pack') && !cats.includes('Grocery'), cats.join(', '));
+    await page.keyboard.press('Escape');
+    await page.goto(`${WEB}/app`);
+    await page.click('[data-restaurant-start] a:has-text("Start") >> nth=0');
+    check('"Start" opens the restaurant set-up', await eventually(() => page.isVisible('.tab.active:has-text("Menu")')));
 
     // ---- kitchen stations --------------------------------------------------------------------
     await page.click('a[href="/app/restaurant"]');
@@ -173,6 +201,12 @@ async function eventually(fn, ms = 8000) {
     await page.click('tr:has-text("Lekki counter PC") button:has-text("Make this the hub")');
     check('the Lekki till is the hub', await eventually(async () => (await page.textContent('tr:has-text("Lekki counter PC")')).includes('Hub'))
       && sql(`SELECT hub_device_id FROM restaurant_restaurantsettings WHERE shop_id = '${lekki}'`) === '7a7a7a7a-0000-4000-8000-000000000001');
+
+    // ---- the dashboard's set-up list is done ----------------------------------------------------------
+    await page.goto(`${WEB}/app`);
+    await page.waitForSelector('.page-title:has-text("Dashboard")');
+    await sleep(1500);
+    check('with menu, tables, kitchen and hub done, the set-up list is gone', !(await page.isVisible('[data-restaurant-start]')));
 
     // ---- the cloud holds exactly that set-up -----------------------------------------------------
     const counts = sql(`SELECT (SELECT COUNT(*) FROM restaurant_kitchenstation WHERE shop_id = '${lekki}') || ',' || (SELECT COUNT(*) FROM restaurant_menuitem WHERE shop_id = '${lekki}')

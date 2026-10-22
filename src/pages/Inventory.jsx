@@ -19,6 +19,7 @@ const FALLBACK_LABEL = {
   apparel_top: 'Top / Shirt', apparel_bottom: 'Trousers / Skirt', footwear: 'Footwear',
   outerwear: 'Outerwear', clothing_accessory: 'Bag / Fashion accessory',
   grocery: 'Grocery', household: 'Household item', stationery: 'Stationery', beverage: 'Beverage',
+  ingredient: 'Food ingredient', packaging: 'Packaging / takeaway pack', kitchen_supply: 'Kitchen & cleaning supply',
   other: 'Other',
 };
 
@@ -29,6 +30,7 @@ const NAME_PLACEHOLDER = {
   gadgets: 'e.g. HP EliteBook 840 G5',
   pharmacy: 'e.g. Paracetamol 500',
   clothing: "e.g. Men's Polo Shirt, size M",
+  restaurant: 'e.g. Coca-Cola 50cl (crate), Rice 50kg',
   general: 'e.g. Indomie Noodles (carton)',
 };
 

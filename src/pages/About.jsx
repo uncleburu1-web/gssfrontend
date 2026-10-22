@@ -55,9 +55,10 @@ export default function About() {
           <h2>Who it's for</h2>
           <p>
             Shop owners who want to know their real numbers, not just today's till. Built
-            specifically around four kinds of shops — gadgets &amp; electronics, pharmacy
-            &amp; health, clothing &amp; fashion, and general retail — so what you see is
-            relevant to what you actually sell, not a generic inventory form.
+            specifically around five kinds of shops — gadgets &amp; electronics, pharmacy
+            &amp; health, clothing &amp; fashion, restaurants &amp; food, and general retail — so
+            what you see is relevant to what you actually sell, not a generic inventory form.
+            One business can run different kinds side by side: each branch picks its own.
           </p>
         </div>
         <div className="about-block">

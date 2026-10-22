@@ -66,11 +66,11 @@ export default function Layout() {
   const { user, logout, isOwner, isCeo, canPay, capabilities, shopName, serviceEnabled, restaurantEnabled, allBranchesView, anyRestaurant } = useAuth();
   const { status: liveStatus, versions } = useLive();
   const { theme, toggleTheme } = useTheme();
-  // Service (device repair/servicing) only makes sense for businesses that
-  // actually fix devices — a clothing or general retail shop never sees
-  // the tab at all, rather than seeing an empty/irrelevant section. Driven
-  // entirely by what the owner picked at signup (Organization.business_type
-  // on the backend).
+  // Service (device repair/servicing) only makes sense for branches that
+  // actually fix devices — a clothing shop or a restaurant never sees the
+  // tab at all, rather than an empty/irrelevant section. Follows the kind of
+  // shop the VIEWED branch is (Shop.shop_type and its modules on the backend;
+  // AuthContext's branchView).
   const coreItems = serviceEnabled
     ? [...BASE_NAV_ITEMS, SERVICE_NAV_ITEM, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM]
     : [...BASE_NAV_ITEMS, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM];

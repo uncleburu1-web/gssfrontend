@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { auth as authApi, branches as branchesApi, devices as devicesApi, subscription as subscriptionApi, controlCenter as controlCenterApi, branchModules } from '../api/endpoints';
+import { auth as authApi, branches as branchesApi, devices as devicesApi, subscription as subscriptionApi, controlCenter as controlCenterApi } from '../api/endpoints';
 import { Icons } from '../components/Icons';
+import { SHOP_TYPES, shopType } from '../utils/shopTypes';
 
 function extractError(err, fallback) {
   const data = err?.response?.data;
@@ -49,7 +50,6 @@ export default function Settings() {
       <AppDownloadsSection />
       {isCeo && <ReceiptSection />}
       {isCeo && <BranchesSection />}
-      <BranchModulesSection />
       {isCeo && <ControlCenterSection />}
       <DevicesSection />
     </div>
@@ -187,82 +187,9 @@ function ChangePasswordCard() {
   );
 }
 
-const MODULE_LABELS = [
-  ['retail', 'Supermarket / shop', 'Products, stock and the till as today.'],
-  ['restaurant', 'Restaurant', 'Menu, tables, kitchen tickets and screens, run from one hub till.'],
-  ['service', 'Repairs / service', 'Device repair jobs.'],
-];
-
-/** Which modules each branch uses (gss branches/views.py BranchModulesView). The package decides
- * which can be switched on; switching off is always allowed and nothing already recorded is lost. */
-function BranchModulesSection() {
-  const { isCeo, user, shopName, refreshUser } = useAuth();
-  const [rows, setRows] = useState(null);
-  const [error, setError] = useState('');
-  const [busy, setBusy] = useState('');
-
-  async function load() {
-    try {
-      let list = [{ id: user?.shop_id, name: shopName }];
-      if (isCeo) { const { data } = await branchesApi.list(); list = data.results || data; }
-      const states = await Promise.all(list.filter((b) => b.id && b.status !== 'archived').map(async (b) => ({ ...b, ...(await branchModules.get(b.id)).data })));
-      setRows(states);
-    } catch (err) {
-      setRows([]);
-      if (err?.response?.status !== 404) setError(extractError(err, 'Could not load what each branch does.'));
-    }
-  }
-  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function flip(branch, module) {
-    setError(''); setBusy(`${branch.id}:${module}`);
-    try {
-      await branchModules.set(branch.id, { [module]: !branch.modules[module] });
-      await load();
-      await refreshUser();
-    } catch (err) {
-      setError(extractError(err, 'Could not change this.'));
-    } finally { setBusy(''); }
-  }
-
-  if (rows !== null && rows.length === 0 && !error) return null; // an older server without modules
-  return (
-    <div className="section">
-      <div className="section-head"><h3>What each branch does</h3></div>
-      <div className="section-body">
-        {error && <div className="form-error">{error}</div>}
-        {rows === null ? <div className="empty">Loading…</div> : (
-          <table>
-            <thead><tr><th>Branch</th>{MODULE_LABELS.map(([m, label]) => <th key={m}>{label}</th>)}</tr></thead>
-            <tbody>
-              {rows.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.name}</td>
-                  {MODULE_LABELS.map(([m, label, hint]) => {
-                    const on = Boolean(b.modules && b.modules[m]);
-                    const allowed = on || Boolean(b.available && b.available[m]);
-                    return (
-                      <td key={m} title={allowed ? hint : 'Not in your package. Change the plan under Billing.'}>
-                        <label style={{ display: 'flex', gap: 6, alignItems: 'center', textTransform: 'none', fontSize: 13, color: 'var(--text)', letterSpacing: 0, margin: 0 }}>
-                          <input type="checkbox" style={{ width: 'auto' }} aria-label={`${label} at ${b.name}`} checked={on} disabled={!allowed || busy === `${b.id}:${m}`} onChange={() => flip(b, m)} />
-                          {on ? 'On' : allowed ? 'Off' : 'Not in plan'}
-                        </label>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-        <div className="field-hint" style={{ marginTop: 8 }}>A branch can be a supermarket and a restaurant at once. Switching something off hides it; nothing already recorded is deleted.</div>
-      </div>
-    </div>
-  );
-}
-
 function BranchesSection() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [list, setList] = useState(null);
   const [sub, setSub] = useState(null);
   const [error, setError] = useState('');
@@ -315,7 +242,7 @@ function BranchesSection() {
         ) : (
           <table className="table">
             <thead>
-              <tr><th>Name</th><th>Code</th><th>Phone</th><th>Manager</th><th>Status</th><th></th></tr>
+              <tr><th>Name</th><th>Kind of shop</th><th>Code</th><th>Phone</th><th>Manager</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
               {list.map((b) => (
@@ -326,6 +253,7 @@ function BranchesSection() {
                       {b.name}
                     </div>
                   </td>
+                  <td data-shop-type={b.shop_type}>{b.shop_type ? shopType(b.shop_type).short : '—'}</td>
                   <td className="mono">{b.branch_code || '—'}</td>
                   <td>{b.phone || '—'}</td>
                   <td>{b.manager_name || <span style={{ color: 'var(--text-dim)' }}>Unassigned</span>}</td>
@@ -347,11 +275,21 @@ function BranchesSection() {
         <BranchModal
           branch={modalBranch}
           onClose={() => setModalBranch(null)}
-          onSaved={() => { setModalBranch(null); load(); }}
+          onSaved={() => { setModalBranch(null); load(); refreshUser().catch(() => {}); }}
         />
       )}
     </div>
   );
+}
+
+/** What changing a branch's kind of shop does (gss branches/views.py BranchViewSet.perform_update). */
+function typeChangeWarning(branch, next) {
+  const from = shopType(branch.shop_type).short;
+  const to = shopType(next).short;
+  let text = `Change ${branch.name} from ${from} to ${to}? The screens it shows change with it; nothing already recorded is deleted.`;
+  if (next === 'restaurant') text += ' It gets the menu, tables and kitchen: set them up under Restaurant, then choose its hub till.';
+  if (branch.shop_type === 'restaurant') text += ' Finish or cancel every open order on its hub till first: the restaurant screens close.';
+  return text;
 }
 
 function BranchModal({ branch, onClose, onSaved }) {
@@ -359,7 +297,7 @@ function BranchModal({ branch, onClose, onSaved }) {
     name: branch.name || '', branch_code: branch.branch_code || '', address: branch.address || '',
     phone: branch.phone || '', email: branch.email || '', logo_url: branch.logo_url || '',
     opening_date: branch.opening_date || '', tax_rate_default: branch.tax_rate_default ?? '0',
-    description: branch.description || '',
+    description: branch.description || '', shop_type: branch.shop_type || '',
     manager_login_full_name: '', manager_login_username: '', manager_login_password: '', confirm_password: '',
   });
   const [showManagerFields, setShowManagerFields] = useState(!branch.manager_name);
@@ -377,10 +315,13 @@ function BranchModal({ branch, onClose, onSaved }) {
       setError('The manager\u2019s password and confirmation don\u2019t match.');
       return;
     }
+    const changingType = Boolean(branch.shop_type && form.shop_type && form.shop_type !== branch.shop_type);
+    if (changingType && !window.confirm(typeChangeWarning(branch, form.shop_type))) return;
     setSaving(true);
     try {
       const payload = { ...form, opening_date: form.opening_date || null };
       delete payload.confirm_password;
+      if (!changingType) delete payload.shop_type;
       await branchesApi.update(branch.id, payload);
       onSaved();
     } catch (err) {
@@ -404,6 +345,15 @@ function BranchModal({ branch, onClose, onSaved }) {
             <input value={form.branch_code} onChange={(e) => set('branch_code', e.target.value)} placeholder="e.g. WUSE001" />
           </div>
         </div>
+
+        {branch.shop_type && (
+          <div className="field"><label>Kind of shop</label>
+            <select aria-label="Kind of shop" value={form.shop_type} onChange={(e) => set('shop_type', e.target.value)}>
+              {SHOP_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <div className="field-hint">{shopType(form.shop_type).hint}</div>
+          </div>
+        )}
 
         <div className="field"><label>Address</label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Street, area, city" />
