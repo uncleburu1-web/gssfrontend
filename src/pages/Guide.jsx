@@ -4,7 +4,7 @@ import '../marketing.css';
 const STEPS = [
   {
     title: 'Create your shop',
-    body: "Give your shop a name, pick the business type closest to what you sell (gadgets, pharmacy, clothing, or general), and set your owner login.",
+    body: "Give your shop a name, pick the kind of shop closest to what you sell (gadgets, pharmacy, clothing, restaurant, or general), and set your owner login. Each branch you add later picks its own kind.",
     rows: [
       ['Shop name', "Chidi's Gadget Store"],
       ['Business type', 'Gadgets & electronics'],

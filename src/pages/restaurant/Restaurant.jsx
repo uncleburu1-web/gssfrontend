@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { restaurant, branches } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import ConfigList from './ConfigList';
@@ -24,7 +24,11 @@ export default function Restaurant() {
     if (!viewingBranchId) { setBranchName(shopName); return; }
     branches.get(viewingBranchId).then(({ data }) => setBranchName(data.name)).catch(() => setBranchName('this branch'));
   }, [viewingBranchId, shopName]);
+  // ?tab=hub (from the dashboard's set-up list) opens that tab; otherwise the last one used.
+  const [params] = useSearchParams();
   const [tab, setTab] = useState(() => {
+    const asked = params.get('tab');
+    if (TABS.some(([id]) => id === asked)) return asked;
     try { return localStorage.getItem('restaurant_tab') || 'menu'; } catch { return 'menu'; }
   });
   const choose = (t) => { setTab(t); try { localStorage.setItem('restaurant_tab', t); } catch { /* fine */ } };

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { branches as branchesApi, subscription } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { Icons } from '../components/Icons';
+import { SHOP_TYPES, shopType } from '../utils/shopTypes';
 
 function extractError(err, fallback) {
   const data = err?.response?.data;
@@ -22,9 +23,10 @@ const EMPTY = {
 };
 
 export default function BranchCreate() {
-  const { shopLogoUrl } = useAuth();
+  const { shopLogoUrl, organizationBusinessType } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState(EMPTY);
+  // A new branch starts as the kind of shop the business signed up as; the CEO picks another here.
+  const [form, setForm] = useState({ ...EMPTY, shop_type: organizationBusinessType || 'general' });
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState(null);
@@ -53,7 +55,7 @@ export default function BranchCreate() {
     setSaving(true);
     try {
       const payload = {
-        name: form.name, branch_code: form.branch_code, address: form.address,
+        name: form.name, shop_type: form.shop_type, branch_code: form.branch_code, address: form.address,
         phone: form.phone, email: form.email, logo_url: form.logo_url,
         opening_date: form.opening_date || null, tax_rate_default: form.tax_rate_default,
         description: form.description,
@@ -97,6 +99,13 @@ export default function BranchCreate() {
               <input value={form.branch_code} onChange={(e) => set('branch_code', e.target.value)} placeholder="e.g. NWK001" />
               <div className="field-hint">A short internal code — leave blank if you don't need one.</div>
             </div>
+          </div>
+
+          <div className="field"><label>What kind of shop is this branch?</label>
+            <select aria-label="Kind of shop" value={form.shop_type} onChange={(e) => set('shop_type', e.target.value)}>
+              {SHOP_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <div className="field-hint">{shopType(form.shop_type).hint}</div>
           </div>
 
           <div className="field"><label>Address</label>

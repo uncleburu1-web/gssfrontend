@@ -4,6 +4,7 @@ import { useLive } from '../context/LiveContext';
 import { useAuth } from '../context/AuthContext';
 import { money, fmtDateTime, apiErrorMessage } from '../utils/format';
 import Amount from '../components/Amount';
+import RestaurantStart from './restaurant/RestaurantStart';
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
@@ -12,7 +13,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { versions } = useLive();
-  const { serviceEnabled, pharmacyEnabled } = useAuth();
+  const { serviceEnabled, pharmacyEnabled, restaurantEnabled, isOwner } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -65,6 +66,8 @@ export default function Dashboard() {
           <div className="page-sub">Today at a glance</div>
         </div>
       </div>
+
+      {restaurantEnabled && isOwner && <RestaurantStart />}
 
       <div className="hero-card" style={{ marginBottom: 16 }}>
         <div className="stat-label">
