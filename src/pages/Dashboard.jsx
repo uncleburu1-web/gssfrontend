@@ -4,16 +4,22 @@ import { useLive } from '../context/LiveContext';
 import { useAuth } from '../context/AuthContext';
 import { money, fmtDateTime, apiErrorMessage } from '../utils/format';
 import Amount from '../components/Amount';
-import RestaurantStart from './restaurant/RestaurantStart';
+import RestaurantDashboard from './restaurant/RestaurantDashboard';
 
+/** A restaurant branch's owner sees the restaurant's day; everyone else the shop dashboard. */
 export default function Dashboard() {
+  const { restaurantEnabled, isOwner } = useAuth();
+  return restaurantEnabled && isOwner ? <RestaurantDashboard /> : <ShopDashboard />;
+}
+
+function ShopDashboard() {
   const [stats, setStats] = useState(null);
   const [activity, setActivity] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { versions } = useLive();
-  const { serviceEnabled, pharmacyEnabled, restaurantEnabled, isOwner } = useAuth();
+  const { serviceEnabled, pharmacyEnabled } = useAuth();
 
   useEffect(() => {
     let mounted = true;
@@ -66,8 +72,6 @@ export default function Dashboard() {
           <div className="page-sub">Today at a glance</div>
         </div>
       </div>
-
-      {restaurantEnabled && isOwner && <RestaurantStart />}
 
       <div className="hero-card" style={{ marginBottom: 16 }}>
         <div className="stat-label">

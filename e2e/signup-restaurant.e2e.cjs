@@ -5,8 +5,8 @@
  *   - the sign-up form offers "Restaurant & food" and says what it gives;
  *   - after the emailed code (read from the database here), the business and its first branch are a
  *     restaurant with the restaurant and retail modules, and no repairs;
- *   - the app shows Restaurant and no Service, the dashboard lists the four set-up steps, and the
- *     first step opens the restaurant set-up.
+ *   - the sidebar is the restaurant's own (Menu, Tables, Kitchen, Taxes & charges, Hub till; no
+ *     Sales, Service or Promotions), the dashboard lists the four set-up steps, and a step opens its page.
  *
  *   PLAYWRIGHT_MODULE=<playwright-core> E2E_CHROMIUM=<chrome> E2E_WEB=http://localhost:5173 \
  *   E2E_PSQL='su postgres -c "psql -d <db> -tAc' node e2e/signup-restaurant.e2e.cjs
@@ -60,8 +60,11 @@ async function eventually(fn, ms = 8000) {
     check('…with the restaurant and retail modules, and no repairs', mods === 'restaurant,retail', mods);
 
     await page.goto(`${WEB}/app`);
-    check('the menu shows Restaurant and no Service', await eventually(() => page.isVisible('a[href="/app/restaurant"]'))
-      && !(await page.isVisible('a[href="/app/service"]')));
+    const nav = async () => (await page.$$eval('.sidebar .navitem', (as) => as.map((a) => a.textContent.trim()))).join(',');
+    check('the sidebar is the restaurant\'s own, with no shop selling, repairs or promotions', await eventually(async () => {
+      const n = await nav();
+      return n.startsWith('Dashboard,Menu,Tables,Kitchen,Stock,Reports,Taxes & charges,Hub till,') && !/Sales|Service|Promotions|Restaurant/.test(n);
+    }), await nav());
     check('the dashboard lists the four set-up steps, none done', await eventually(async () => {
       const t = await page.textContent('[data-restaurant-start]');
       return ['Add your menu', 'Add your tables', 'Set up the kitchen', 'Choose the hub till'].every((x) => t.includes(x))
@@ -69,7 +72,7 @@ async function eventually(fn, ms = 8000) {
     }));
     await page.screenshot({ path: path.join(SHOTS, 'web-signup-restaurant.png'), fullPage: true });
     await page.click('[data-restaurant-start] a:has-text("Start") >> nth=1');
-    check('"Add your tables" opens the restaurant set-up on Tables', await eventually(() => page.isVisible('.tab.active:has-text("Tables")'))
+    check('"Add your tables" opens the Tables page', await eventually(async () => page.url().endsWith('/app/tables') && (await page.textContent('.page-title')) === 'Tables')
       && await page.isVisible('button:has-text("+ Add area")'));
     check('no script errors in the page', errors.length === 0, errors.join(' | ').slice(0, 300));
   } catch (e) {
