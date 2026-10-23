@@ -139,6 +139,10 @@ function branchView(user) {
     // A CEO on "All branches" works in no single branch: restaurant set-up needs one picked first.
     allBranchesView,
     anyRestaurant: Object.values(map).some((m) => m.includes('restaurant')) || (user?.modules || []).includes('restaurant'),
+    // Every branch is a restaurant: "All branches" shows the restaurant sidebar too.
+    allRestaurant: Object.keys(map).length > 0 && Object.values(map).every((m) => m.includes('restaurant')),
+    // The worker roles this kind of shop offers ([{ value, label }]; gss core.modules.TYPE_ROLES).
+    roleChoices: typeInfo[businessType]?.roles || null,
   };
 }
 

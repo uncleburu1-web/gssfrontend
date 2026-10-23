@@ -7,6 +7,8 @@ import { restaurant } from '../../api/endpoints';
  * up (or turned a branch into a restaurant) and now needs a menu, tables, a kitchen and a hub till
  * before the first order can be taken. Hidden once everything is there, or if the counts cannot load.
  */
+const PAGE = { menu: '/app/menu', tables: '/app/tables', kitchen: '/app/kitchen', hub: '/app/hub-till' };
+
 export default function RestaurantStart() {
   const [state, setState] = useState(null);
   useEffect(() => {
@@ -35,7 +37,7 @@ export default function RestaurantStart() {
         {steps.map(([tab, label, done]) => (
           <div key={tab} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
             <span>{done ? '✓' : '○'} {label}</span>
-            {done ? <span className="badge good">{done}</span> : <Link className="btn small" to={`/app/restaurant?tab=${tab}`}>Start</Link>}
+            {done ? <span className="badge good">{done}</span> : <Link className="btn small" to={PAGE[tab]}>Start</Link>}
           </div>
         ))}
       </div>

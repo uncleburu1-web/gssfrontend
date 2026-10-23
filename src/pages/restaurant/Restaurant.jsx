@@ -1,37 +1,27 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { restaurant, branches } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import ConfigList from './ConfigList';
 import MenuTab from './MenuTab';
 import TaxesTab from './TaxesTab';
 import HubTab from './HubTab';
-import ReportsTab from './ReportsTab';
 import { useLists } from './useLists';
 
-const TABS = [['menu', 'Menu'], ['tables', 'Tables'], ['kitchen', 'Kitchen'], ['taxes', 'Taxes & charges'], ['hub', 'Hub till'], ['reports', 'Reports']];
-
 /**
- * Setting up a restaurant branch (REST-12). Everything here is saved in the cloud and reaches the
- * branch's hub till on its next pull (within seconds when it is online). Orders themselves are taken
- * on the hub; finished ones come back here for the reports.
+ * A restaurant branch's own pages (owner's request, 23 Oct 2026: the restaurant is the main thing for
+ * a restaurant branch, so Menu, Tables, Kitchen, Taxes & charges and Hub till sit in the sidebar
+ * themselves, and its takings are in the normal Reports page). Everything here is saved in the cloud
+ * and reaches the branch's hub till on its next pull (within seconds when it is online).
  */
-export default function Restaurant() {
-  const { restaurantEnabled, shopName, allBranchesView, viewingBranchId } = useAuth();
+export function RestaurantPage({ title, sub, children }) {
+  const { restaurantEnabled, shopName, allBranchesView, viewingBranchId, businessTypeLabel } = useAuth();
   // The branch being set up: a CEO may be viewing another branch than their own (shopName).
   const [branchName, setBranchName] = useState(viewingBranchId ? '' : shopName);
   useEffect(() => {
     if (!viewingBranchId) { setBranchName(shopName); return; }
     branches.get(viewingBranchId).then(({ data }) => setBranchName(data.name)).catch(() => setBranchName('this branch'));
   }, [viewingBranchId, shopName]);
-  // ?tab=hub (from the dashboard's set-up list) opens that tab; otherwise the last one used.
-  const [params] = useSearchParams();
-  const [tab, setTab] = useState(() => {
-    const asked = params.get('tab');
-    if (TABS.some(([id]) => id === asked)) return asked;
-    try { return localStorage.getItem('restaurant_tab') || 'menu'; } catch { return 'menu'; }
-  });
-  const choose = (t) => { setTab(t); try { localStorage.setItem('restaurant_tab', t); } catch { /* fine */ } };
 
   if (allBranchesView) {
     return (
@@ -47,8 +37,8 @@ export default function Restaurant() {
     return (
       <div className="section" style={{ maxWidth: 640 }}>
         <div className="section-body" style={{ padding: 22 }}>
-          <h3 style={{ marginTop: 0 }}>This branch does not use the restaurant</h3>
-          <p style={{ color: 'var(--text-dim)' }}>Switch the restaurant on for {branchName || 'this branch'} in <Link to="/app/settings">Settings → What this branch does</Link>. The supermarket side keeps working as it is.</p>
+          <h3 style={{ marginTop: 0 }}>{branchName || 'This branch'} is not a restaurant</h3>
+          <p style={{ color: 'var(--text-dim)' }}>It is set up as {businessTypeLabel ? businessTypeLabel.split(' (')[0].toLowerCase() : 'a shop'}. To run it as a restaurant, change its kind of shop in <Link to="/app/settings">Settings → Branches</Link>.</p>
         </div>
       </div>
     );
@@ -57,21 +47,40 @@ export default function Restaurant() {
     <div>
       <div className="topbar">
         <div>
-          <div className="page-title">Restaurant</div>
-          <div className="page-sub">Set up {branchName ? `${branchName}'s` : 'the'} menu, tables, kitchen and taxes. The hub till picks up every change by itself.</div>
+          <div className="page-title">{title}</div>
+          <div className="page-sub">{branchName ? `${branchName}: ` : ''}{sub}</div>
         </div>
       </div>
-      <div className="tabs" style={{ marginBottom: 16 }}>
-        {TABS.map(([id, label]) => <button key={id} className={`tab ${tab === id ? 'active' : ''}`} onClick={() => choose(id)}>{label}</button>)}
-      </div>
-      {tab === 'menu' && <MenuTab />}
-      {tab === 'tables' && <TablesTab />}
-      {tab === 'kitchen' && <KitchenTab />}
-      {tab === 'taxes' && <TaxesTab />}
-      {tab === 'hub' && <HubTab />}
-      {tab === 'reports' && <ReportsTab />}
+      {children}
     </div>
   );
+}
+
+export function MenuPage() {
+  return <RestaurantPage title="Menu" sub="what you sell, where it is made, and the choices on each item. The hub till picks up every change by itself."><MenuTab /></RestaurantPage>;
+}
+
+export function TablesPage() {
+  return <RestaurantPage title="Tables" sub="the floor the waiters see on the hub till."><TablesTab /></RestaurantPage>;
+}
+
+export function KitchenPage() {
+  return <RestaurantPage title="Kitchen" sub="where food and drink are made, and how tickets reach each station."><KitchenTab /></RestaurantPage>;
+}
+
+export function TaxesPage() {
+  return <RestaurantPage title="Taxes & charges" sub="service charge, taxes and how orders are numbered."><TaxesTab /></RestaurantPage>;
+}
+
+export function HubPage() {
+  return <RestaurantPage title="Hub till" sub="the till that runs the restaurant."><HubTab /></RestaurantPage>;
+}
+
+/** Old links (/app/restaurant?tab=...) open the matching page. */
+const OLD_TABS = { menu: '/app/menu', tables: '/app/tables', kitchen: '/app/kitchen', taxes: '/app/taxes', hub: '/app/hub-till', reports: '/app/reports' };
+export default function RestaurantRedirect() {
+  const [params] = useSearchParams();
+  return <Navigate to={OLD_TABS[params.get('tab')] || '/app/menu'} replace />;
 }
 
 const nameOf = (rows, id) => (rows || []).find((r) => r.id === id)?.name || (rows || []).find((r) => r.id === id)?.label || '—';
@@ -113,6 +122,13 @@ function KitchenTab() {
         defaults={{ prints: true, shows_on_screen: false, sort: 0 }}
         columns={[{ label: 'Station', key: 'name' }, { label: 'Tickets', render: (r) => [r.prints && 'Printer', r.shows_on_screen && 'Screen'].filter(Boolean).join(' + ') || 'Neither' }]}
         empty="Add at least one station so orders reach the kitchen." />
+      <div className="section">
+        <div className="section-head"><h3>Kitchen printers and screens</h3></div>
+        <div className="section-body" style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text-dim)', paddingTop: 12 }}>
+          Printers and kitchen screens connect to the <b style={{ color: 'var(--text)' }}>hub till</b> on the shop&apos;s Wi-Fi, so the kitchen keeps working without internet.
+          On the hub till, open <b style={{ color: 'var(--text)' }}>Restaurant → Set-up</b>: choose each station&apos;s printer, and pair a kitchen screen (a tablet or TV browser) with the 6-digit code it shows.
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { restaurant } from '../../api/endpoints';
 import { apiErrorMessage, fmtDateTime } from '../../utils/format';
 
-const naira = (v) => '₦' + Number(v || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const SERVICE = { dine_in: 'Dine-in', takeaway: 'Takeaway', counter: 'Counter' };
-const METHOD = { cash: 'Cash', transfer: 'Transfer', pos: 'POS/Card', mobile: 'Mobile money' };
-const lagosToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos' }).format(new Date());
+export const naira = (v) => '₦' + Number(v || 0).toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+export const SERVICE = { dine_in: 'Dine-in', takeaway: 'Takeaway', counter: 'Counter' };
+export const METHOD = { cash: 'Cash', transfer: 'Transfer', pos: 'POS/Card', mobile: 'Mobile money' };
+export const lagosToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Lagos' }).format(new Date());
 
-/** Finished orders as the hub uploaded them: takings, service charge, taxes, voids, kitchen times. */
-export default function ReportsTab() {
+/** Finished orders as the hub uploaded them: takings, service charge, taxes, voids, kitchen times. Shown as
+ * the first tab of Reports for a restaurant branch. */
+export default function RestaurantReport() {
   const [from, setFrom] = useState(lagosToday());
   const [to, setTo] = useState(lagosToday());
   const [summary, setSummary] = useState(null);
@@ -92,11 +93,11 @@ export default function ReportsTab() {
   );
 }
 
-function Card({ title, children }) {
+export function Card({ title, children }) {
   return <div className="section" style={{ margin: 0 }}><div className="section-head"><h3>{title}</h3></div><div className="section-body">{children}</div></div>;
 }
 
-function Row({ left, right, dim }) {
+export function Row({ left, right, dim }) {
   return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)', fontSize: 13.5, color: dim ? 'var(--text-dim)' : undefined }}><span>{left}</span><span className="num">{right}</span></div>;
 }
 

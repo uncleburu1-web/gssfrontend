@@ -5,7 +5,9 @@
  *
  * Here the CEO, in the browser:
  *   - turns the second branch, "E2E Lekki", into a restaurant by changing its kind of shop in
- *     Settings (it was general retail): its menus, stock categories and dashboard follow;
+ *     Settings (it was general retail): the sidebar becomes the restaurant's own (Menu, Tables,
+ *     Kitchen, Taxes & charges, Hub till; no shop selling, repairs or promotions), Workers offers
+ *     waiters, cashiers and kitchen staff, and the dashboard, stock categories and Reports follow;
  *   - builds its whole set-up through the forms: stations, categories, items, a required choice
  *     linked to an item, an area and tables, the service charge, VAT activated with the safeguards,
  *     a second tax refused as overlapping until confirmed, and the hub till;
@@ -57,15 +59,30 @@ async function eventually(fn, ms = 8000) {
     const lekkiRow = 'tr:has-text("E2E Lekki")';
     check('Settings shows each branch\'s kind of shop; Lekki is general retail',
       await eventually(async () => (await page.textContent(lekkiRow)).includes('General retail')));
-    check('the menu has no Restaurant while viewing Lekki', !(await page.isVisible('a[href="/app/restaurant"]')));
+    const sidebar = async () => (await page.$$eval('.sidebar .navitem', (as) => as.map((a) => a.textContent.trim())));
+    check('as general retail, Lekki has the shop sidebar', await eventually(async () => {
+      const nav = await sidebar();
+      return nav.includes('Sales') && nav.includes('Promotions') && !nav.includes('Menu') && !nav.includes('Restaurant');
+    }), (await sidebar()).join(', '));
+    await page.goto(`${WEB}/app/workers`);
+    await page.click('button:has-text("Add worker")');
+    const shopRoles = await page.$$eval('.modal select[aria-label="Role"] option', (os) => os.map((o) => o.textContent));
+    check('…and Workers offers shop roles', shopRoles.join(',') === 'Seller,Receptionist,Service technician,Shop attendant,Other', shopRoles.join(','));
+    await page.goto(`${WEB}/app/settings`);
+    await page.waitForSelector(lekkiRow);
     await page.click(`${lekkiRow} button:has-text("Edit")`);
     await page.selectOption('.modal select[aria-label="Kind of shop"]', 'restaurant');
     check('the form says what a restaurant gets', (await page.textContent('.modal')).includes('Menu, tables, kitchen tickets'));
     const dialogs = [];
     page.on('dialog', (d) => dialogs.push(d.message()));
     await page.click('.modal button:has-text("Save")');
-    check('Lekki is now a restaurant, and the menu shows Restaurant', await eventually(async () =>
-      (await page.textContent(lekkiRow)).includes('Restaurant & food') && page.isVisible('a[href="/app/restaurant"]')));
+    check('Lekki is now a restaurant', await eventually(async () => (await page.textContent(lekkiRow)).includes('Restaurant & food')));
+    check('the sidebar is the restaurant\'s own: Menu, Tables, Kitchen, Stock, Reports, Taxes & charges, Hub till; no Sales, Service, Promotions or "Restaurant"',
+      await eventually(async () => {
+        const nav = (await sidebar()).join(',');
+        return nav.startsWith('Dashboard,Menu,Tables,Kitchen,Stock,Reports,Taxes & charges,Hub till,')
+          && !/Sales|Service|Promotions|Restaurant/.test(nav);
+      }), (await sidebar()).join(', '));
     check('the owner was warned before the change', dialogs.some((m) => m.includes('to Restaurant & food') && m.includes('choose its hub till')), dialogs.join(' | '));
     check('the cloud: Lekki is a restaurant with restaurant + retail, and the change is in the audit log',
       sql(`SELECT shop_type FROM core_shop WHERE id = '${lekki}'`) === 'restaurant'
@@ -75,10 +92,19 @@ async function eventually(fn, ms = 8000) {
 
     // ---- what follows from the kind of shop -------------------------------------------------------
     await page.goto(`${WEB}/app`);
-    check('the dashboard shows the restaurant set-up list for Lekki', await eventually(async () => {
+    check('the dashboard is the restaurant\'s day, with the set-up list for Lekki', await eventually(async () => {
       const t = await page.textContent('[data-restaurant-start]');
-      return t.includes('Add your menu') && t.includes('Choose the hub till');
+      return t.includes('Add your menu') && t.includes('Choose the hub till') && (await page.textContent('[data-restaurant-today]')).includes('Takings today');
     }));
+    await page.goto(`${WEB}/app/workers`);
+    await page.click('button:has-text("Add worker")');
+    const restaurantRoles = await page.$$eval('.modal select[aria-label="Role"] option', (os) => os.map((o) => o.textContent));
+    check('Workers offers restaurant roles', restaurantRoles.join(',') === 'Waiter,Cashier,Kitchen staff,Other', restaurantRoles.join(','));
+    await page.fill('.modal input[required]', 'Ngozi Waiter');
+    await page.selectOption('.modal select[aria-label="Role"]', 'waiter');
+    await page.uncheck('.modal input[type="checkbox"]').catch(() => {});
+    await page.click('.modal button[type="submit"]');
+    check('a waiter is added to Lekki', await eventually(() => sql(`SELECT role FROM staff_worker WHERE shop_id = '${lekki}' AND full_name = 'Ngozi Waiter'`) === 'waiter'));
     await page.goto(`${WEB}/app/inventory`);
     await page.click('button:has-text("Add item")');
     const cats = await page.$$eval('.modal select option', (os) => os.map((o) => o.textContent));
@@ -86,11 +112,10 @@ async function eventually(fn, ms = 8000) {
     await page.keyboard.press('Escape');
     await page.goto(`${WEB}/app`);
     await page.click('[data-restaurant-start] a:has-text("Start") >> nth=0');
-    check('"Start" opens the restaurant set-up', await eventually(() => page.isVisible('.tab.active:has-text("Menu")')));
+    check('"Start" opens the Menu page', await eventually(async () => page.url().endsWith('/app/menu') && (await page.textContent('.page-title')) === 'Menu'));
 
     // ---- kitchen stations --------------------------------------------------------------------
-    await page.click('a[href="/app/restaurant"]');
-    await page.click('.tab:has-text("Kitchen")');
+    await page.click('.sidebar a[href="/app/kitchen"]');
     for (const [name, screen] of [['Kitchen', true], ['Bar', false]]) {
       await page.click('button:has-text("+ Add station")');
       await page.fill('.modal input[aria-label="Name"]', name);
@@ -102,7 +127,7 @@ async function eventually(fn, ms = 8000) {
     check('the page names the branch being set up (Lekki), not the CEO\'s own branch', (await page.textContent('.page-sub')).includes('E2E Lekki'));
 
     // ---- menu --------------------------------------------------------------------------------------
-    await page.click('.tab:has-text("Menu")');
+    await page.click('.sidebar a[href="/app/menu"]');
     for (const [name, station] of [['Mains', 'Kitchen'], ['Drinks', 'Bar']]) {
       await page.click('button:has-text("+ Add category")');
       await page.fill('.modal input[aria-label="Name"]', name);
@@ -143,7 +168,7 @@ async function eventually(fn, ms = 8000) {
     await page.screenshot({ path: path.join(SHOTS, 'web-1-menu.png'), fullPage: true });
 
     // ---- tables --------------------------------------------------------------------------------------
-    await page.click('.tab:has-text("Tables")');
+    await page.click('.sidebar a[href="/app/tables"]');
     await page.click('button:has-text("+ Add area")');
     await page.fill('.modal input[aria-label="Name"]', 'Hall');
     await page.click('.modal button:has-text("Save")');
@@ -163,7 +188,7 @@ async function eventually(fn, ms = 8000) {
     await page.click('.modal button:has-text("Cancel")');
 
     // ---- service charge and taxes --------------------------------------------------------------------
-    await page.click('.tab:has-text("Taxes")');
+    await page.click('.sidebar a[href="/app/taxes"]');
     await page.fill('input[aria-label="Service charge"]', '10');
     await page.click('.section:has-text("Service charge and orders") button:has-text("Save")');
     check('service charge saved as typed (10%)', await eventually(() => page.isVisible('text=Orders opened from now on use it'))
@@ -197,14 +222,14 @@ async function eventually(fn, ms = 8000) {
     await page.screenshot({ path: path.join(SHOTS, 'web-2-taxes.png'), fullPage: true });
 
     // ---- hub till ------------------------------------------------------------------------------------
-    await page.click('.tab:has-text("Hub till")');
+    await page.click('.sidebar a[href="/app/hub-till"]');
     await page.click('tr:has-text("Lekki counter PC") button:has-text("Make this the hub")');
     check('the Lekki till is the hub', await eventually(async () => (await page.textContent('tr:has-text("Lekki counter PC")')).includes('Hub'))
       && sql(`SELECT hub_device_id FROM restaurant_restaurantsettings WHERE shop_id = '${lekki}'`) === '7a7a7a7a-0000-4000-8000-000000000001');
 
     // ---- the dashboard's set-up list is done ----------------------------------------------------------
     await page.goto(`${WEB}/app`);
-    await page.waitForSelector('.page-title:has-text("Dashboard")');
+    await page.waitForSelector('[data-restaurant-today]');
     await sleep(1500);
     check('with menu, tables, kitchen and hub done, the set-up list is gone', !(await page.isVisible('[data-restaurant-start]')));
 
@@ -222,8 +247,8 @@ async function eventually(fn, ms = 8000) {
       check('E2E Store has an uploaded order (run gssdesktop e2e/restaurant-hub.cjs first)', false);
     } else {
       await page.evaluate((id) => localStorage.setItem('current_branch_id', id), store);
-      await page.goto(`${WEB}/app/restaurant`);
-      await page.click('.tab:has-text("Reports")');
+      await page.goto(`${WEB}/app/reports`);
+      check('Reports opens on the restaurant\'s takings', await eventually(() => page.isVisible('.report-nav button.active:has-text("Restaurant takings")')));
       await page.fill('input[type="date"] >> nth=0', day);
       await page.fill('input[type="date"] >> nth=1', day);
       check('E2E Store\'s takings show the order the hub uploaded', await eventually(async () => (await page.textContent('[data-takings]')).includes('11,162.50')),

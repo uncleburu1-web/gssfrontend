@@ -287,7 +287,7 @@ function typeChangeWarning(branch, next) {
   const from = shopType(branch.shop_type).short;
   const to = shopType(next).short;
   let text = `Change ${branch.name} from ${from} to ${to}? The screens it shows change with it; nothing already recorded is deleted.`;
-  if (next === 'restaurant') text += ' It gets the menu, tables and kitchen: set them up under Restaurant, then choose its hub till.';
+  if (next === 'restaurant') text += ' It gets its own Menu, Tables and Kitchen pages in the sidebar: set them up there, then choose its hub till.';
   if (branch.shop_type === 'restaurant') text += ' Finish or cancel every open order on its hub till first: the restaurant screens close.';
   return text;
 }
