@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { reports, analytics } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import RestaurantReport from './restaurant/ReportsTab';
 import { money, apiErrorMessage } from '../utils/format';
 import { Icons } from '../components/Icons';
 import Amount from '../components/Amount';
@@ -42,8 +43,14 @@ function thisMonthISO() {
 }
 
 export default function Reports() {
-  const { shopName } = useAuth();
-  const [tab, setTab] = useState('overview');
+  const { shopName, restaurantEnabled } = useAuth();
+  // A restaurant branch opens on its takings (orders, covers, service charge, taxes, kitchen times),
+  // then the same money reports as any branch: its closed orders are sales there too. A restaurant
+  // bill has no customer account, so "Sales by customer" is left out.
+  const reportTabs = restaurantEnabled
+    ? [{ id: 'restaurant', label: 'Restaurant takings' }, ...REPORT_TABS.filter((t) => t.id !== 'by-customer')]
+    : REPORT_TABS;
+  const [tab, setTab] = useState(restaurantEnabled ? 'restaurant' : 'overview');
   const [periodMode, setPeriodMode] = useState('day'); // 'day' | 'month' -- the OLDER reports' picker
   const [date, setDate] = useState(todayISO());
   const [month, setMonth] = useState(thisMonthISO());
@@ -55,12 +62,13 @@ export default function Reports() {
   const [loading, setLoading] = useState(true);
 
   const isRangeTab = RANGE_TABS.has(tab);
-  const usesPeriod = !isRangeTab && tab !== 'expiring' && tab !== 'valuation';
+  const isRestaurant = tab === 'restaurant'; // has its own from/to business days
+  const usesPeriod = !isRangeTab && !isRestaurant && tab !== 'expiring' && tab !== 'valuation';
   const params = usesPeriod ? (periodMode === 'day' ? { date } : { month }) : undefined;
   const rangeParams = isRangeTab
     ? { period: rangePeriod, ...(rangePeriod === 'custom' ? { start: customStart, end: customEnd } : {}) }
     : undefined;
-  const activeTabLabel = REPORT_TABS.find((t) => t.id === tab)?.label || 'Report';
+  const activeTabLabel = reportTabs.find((t) => t.id === tab)?.label || 'Report';
   const periodLabel = isRangeTab
     ? (PERIOD_OPTIONS.find(([v]) => v === rangePeriod)?.[1] || '')
     : !usesPeriod ? '' : periodMode === 'day' ? date : month;
@@ -69,6 +77,7 @@ export default function Reports() {
     let cancelled = false;
 
     async function load() {
+      if (tab === 'restaurant') { setLoading(false); setData(null); return; }
       setLoading(true);
       setLoadError('');
       setData(null);
@@ -108,9 +117,9 @@ export default function Reports() {
       <div className="topbar">
         <div>
           <div className="page-title">Reports</div>
-          <div className="page-sub">How the shop is really doing</div>
+          <div className="page-sub">{restaurantEnabled ? 'How the restaurant is really doing' : 'How the shop is really doing'}</div>
         </div>
-        <button className="btn" onClick={() => window.print()} disabled={loading || !data}>
+        <button className="btn" onClick={() => window.print()} disabled={!isRestaurant && (loading || !data)}>
           {Icons.print} Print this report
         </button>
       </div>
@@ -126,7 +135,7 @@ export default function Reports() {
       </div>
 
       <div className="report-nav">
-        {REPORT_TABS.map((t) => (
+        {reportTabs.map((t) => (
           <button key={t.id} className={tab === t.id ? 'active' : ''} onClick={() => setTab(t.id)}>{t.label}</button>
         ))}
       </div>
@@ -159,11 +168,13 @@ export default function Reports() {
         </div>
       )}
 
-      <div className="section">
-        <div className="section-body" style={{ paddingTop: 16 }}>
-          {loadError ? <div className="form-error">{loadError}</div> : loading || !data ? <div className="empty">Loading…</div> : renderReport(tab, data)}
+      {isRestaurant ? <RestaurantReport /> : (
+        <div className="section">
+          <div className="section-body" style={{ paddingTop: 16 }}>
+            {loadError ? <div className="form-error">{loadError}</div> : loading || !data ? <div className="empty">Loading…</div> : renderReport(tab, data)}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="report-print-footer">
         Software by Gavin's Software Solutions (GSS) · ogbejoshua42@gmail.com · 0806 377 3201

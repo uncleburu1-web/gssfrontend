@@ -92,19 +92,58 @@ export function AuthProvider({ children }) {
       shopId: user?.shop_id || null,
       shopName: user?.shop_name || 'My Shop',
       shopLogoUrl: user?.shop_logo_url || '',
-      serviceEnabled: !!user?.service_enabled,
-      pharmacyEnabled: !!user?.pharmacy_enabled,
-      businessType: user?.business_type || 'general',
-      // [{ value, label }, ...] already scoped to this org's business_type
-      // by the backend (InventoryItem.category_choices_for) — Inventory
-      // reads this instead of hard-coding which categories belong to
-      // which shop type.
-      availableCategories: user?.available_categories || [],
+      // The branch being VIEWED: its kind of shop, its modules (retail / restaurant / service) and what
+      // follows from them (repairs, pharmacy screens, stock categories). See branchView below.
+      ...branchView(user),
+      features: user?.features || [],
       refreshUser: async () => { const me = await auth.me(); setUser(me.data); },
     }}>
       {children}
     </AuthContext.Provider>
   );
+}
+
+/**
+ * Each branch is its own kind of shop (gss ADR-025): a CEO can run a gadget shop and a restaurant.
+ * /me's own fields describe the user's OWN branch; a CEO who switched branches (Layout's switcher,
+ * which reloads the page) is shown that branch instead, from /me's `branch_modules`, `branch_types`
+ * and `shop_types`. On "All branches" the menus show what any branch has. Older servers send none
+ * of the three: everything falls back to /me's own fields, exactly as before.
+ */
+function branchView(user) {
+  let viewing = '';
+  try { viewing = localStorage.getItem('current_branch_id') || ''; } catch { viewing = ''; }
+  const map = user?.branch_modules || {};
+  const types = user?.branch_types || {};
+  const typeInfo = Object.fromEntries((user?.shop_types || []).map((t) => [t.value, t]));
+  const viewedModules = viewing ? map[viewing] : undefined;
+  const viewedType = viewing ? types[viewing] : undefined;
+  const modules = viewedModules || user?.modules || [];
+  const businessType = viewedType || user?.business_type || 'general';
+  const allBranchesView = Boolean(user?.is_ceo && !viewing && Object.keys(map).length > 1);
+  return {
+    viewingBranchId: viewing,
+    modules,
+    businessType,
+    businessTypeLabel: typeInfo[businessType]?.label || user?.business_type_label || '',
+    // What the business signed up as: the default kind for a new branch.
+    organizationBusinessType: user?.organization_business_type || user?.business_type || 'general',
+    serviceEnabled: viewedModules ? viewedModules.includes('service')
+      : (!!user?.service_enabled || (allBranchesView && Object.values(map).some((m) => m.includes('service')))),
+    pharmacyEnabled: viewedType ? viewedType === 'pharmacy'
+      : (!!user?.pharmacy_enabled || (allBranchesView && Object.values(types).includes('pharmacy'))),
+    // [{ value, label }, ...] for the stock category picker, for this kind of shop
+    // (InventoryItem.category_choices_for on the server).
+    availableCategories: (viewedType && typeInfo[viewedType]?.categories) || user?.available_categories || [],
+    restaurantEnabled: modules.includes('restaurant'),
+    // A CEO on "All branches" works in no single branch: restaurant set-up needs one picked first.
+    allBranchesView,
+    anyRestaurant: Object.values(map).some((m) => m.includes('restaurant')) || (user?.modules || []).includes('restaurant'),
+    // Every branch is a restaurant: "All branches" shows the restaurant sidebar too.
+    allRestaurant: Object.keys(map).length > 0 && Object.values(map).every((m) => m.includes('restaurant')),
+    // The worker roles this kind of shop offers ([{ value, label }]; gss core.modules.TYPE_ROLES).
+    roleChoices: typeInfo[businessType]?.roles || null,
+  };
 }
 
 export function useAuth() {

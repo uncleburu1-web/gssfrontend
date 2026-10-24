@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { errorDetail } from '../api/errors';
+import { SHOP_TYPES, shopType } from '../utils/shopTypes';
 import '../marketing.css';
 
 export default function Signup() {
@@ -62,16 +63,11 @@ export default function Signup() {
             </div>
             <div className="lp-field">
               <label>What kind of shop do you run?</label>
-              <select value={businessType} onChange={(e) => setBusinessType(e.target.value)}>
-                <option value="gadgets">Gadgets & electronics (phones, laptops, accessories)</option>
-                <option value="clothing">Clothing & fashion</option>
-                <option value="pharmacy">Pharmacy & health products</option>
-                <option value="general">General retail / other</option>
+              <select aria-label="Kind of shop" value={businessType} onChange={(e) => setBusinessType(e.target.value)}>
+                {SHOP_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
               <div className="lp-field-hint">
-                {businessType === 'gadgets'
-                  ? 'You\u2019ll get service-ticket tracking alongside stock and sales.'
-                  : 'No service tracking \u2014 just stock, sales, and reports.'}
+                {shopType(businessType).hint} Running more than one kind? Each branch you add later picks its own.
               </div>
             </div>
             <div className="lp-field">

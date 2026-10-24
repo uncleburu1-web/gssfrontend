@@ -4,8 +4,15 @@ import { useLive } from '../context/LiveContext';
 import { useAuth } from '../context/AuthContext';
 import { money, fmtDateTime, apiErrorMessage } from '../utils/format';
 import Amount from '../components/Amount';
+import RestaurantDashboard from './restaurant/RestaurantDashboard';
 
+/** A restaurant branch's owner sees the restaurant's day; everyone else the shop dashboard. */
 export default function Dashboard() {
+  const { restaurantEnabled, isOwner } = useAuth();
+  return restaurantEnabled && isOwner ? <RestaurantDashboard /> : <ShopDashboard />;
+}
+
+function ShopDashboard() {
   const [stats, setStats] = useState(null);
   const [activity, setActivity] = useState([]);
   const [lowStock, setLowStock] = useState([]);

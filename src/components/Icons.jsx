@@ -131,4 +131,25 @@ export const Icons = {
       <path d="M21 15l-5-5L5 21" />
     </svg>
   ),
+  // Restaurant pages.
+  menu: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h12a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V4z" /><path d="M8 9h6" /><path d="M8 13h6" /><path d="M20 8v12" />
+    </svg>
+  ),
+  tables: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="7" width="18" height="4" rx="1" /><path d="M6 11v8" /><path d="M18 11v8" /><path d="M9 4h6" />
+    </svg>
+  ),
+  kitchen: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 14a5 5 0 1 1 2.5-9.33A4 4 0 0 1 17 6a4 4 0 0 1 0 8" /><path d="M7 14h10v6H7z" />
+    </svg>
+  ),
+  percent: (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="19" y1="5" x2="5" y2="19" /><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" />
+    </svg>
+  ),
 };

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { auth as authApi, branches as branchesApi, devices as devicesApi, subscription as subscriptionApi, controlCenter as controlCenterApi } from '../api/endpoints';
 import { Icons } from '../components/Icons';
+import { SHOP_TYPES, shopType } from '../utils/shopTypes';
 
 function extractError(err, fallback) {
   const data = err?.response?.data;
@@ -188,6 +189,7 @@ function ChangePasswordCard() {
 
 function BranchesSection() {
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
   const [list, setList] = useState(null);
   const [sub, setSub] = useState(null);
   const [error, setError] = useState('');
@@ -240,7 +242,7 @@ function BranchesSection() {
         ) : (
           <table className="table">
             <thead>
-              <tr><th>Name</th><th>Code</th><th>Phone</th><th>Manager</th><th>Status</th><th></th></tr>
+              <tr><th>Name</th><th>Kind of shop</th><th>Code</th><th>Phone</th><th>Manager</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
               {list.map((b) => (
@@ -251,6 +253,7 @@ function BranchesSection() {
                       {b.name}
                     </div>
                   </td>
+                  <td data-shop-type={b.shop_type}>{b.shop_type ? shopType(b.shop_type).short : '—'}</td>
                   <td className="mono">{b.branch_code || '—'}</td>
                   <td>{b.phone || '—'}</td>
                   <td>{b.manager_name || <span style={{ color: 'var(--text-dim)' }}>Unassigned</span>}</td>
@@ -272,11 +275,21 @@ function BranchesSection() {
         <BranchModal
           branch={modalBranch}
           onClose={() => setModalBranch(null)}
-          onSaved={() => { setModalBranch(null); load(); }}
+          onSaved={() => { setModalBranch(null); load(); refreshUser().catch(() => {}); }}
         />
       )}
     </div>
   );
+}
+
+/** What changing a branch's kind of shop does (gss branches/views.py BranchViewSet.perform_update). */
+function typeChangeWarning(branch, next) {
+  const from = shopType(branch.shop_type).short;
+  const to = shopType(next).short;
+  let text = `Change ${branch.name} from ${from} to ${to}? The screens it shows change with it; nothing already recorded is deleted.`;
+  if (next === 'restaurant') text += ' It gets its own Menu, Tables and Kitchen pages in the sidebar: set them up there, then choose its hub till.';
+  if (branch.shop_type === 'restaurant') text += ' Finish or cancel every open order on its hub till first: the restaurant screens close.';
+  return text;
 }
 
 function BranchModal({ branch, onClose, onSaved }) {
@@ -284,7 +297,7 @@ function BranchModal({ branch, onClose, onSaved }) {
     name: branch.name || '', branch_code: branch.branch_code || '', address: branch.address || '',
     phone: branch.phone || '', email: branch.email || '', logo_url: branch.logo_url || '',
     opening_date: branch.opening_date || '', tax_rate_default: branch.tax_rate_default ?? '0',
-    description: branch.description || '',
+    description: branch.description || '', shop_type: branch.shop_type || '',
     manager_login_full_name: '', manager_login_username: '', manager_login_password: '', confirm_password: '',
   });
   const [showManagerFields, setShowManagerFields] = useState(!branch.manager_name);
@@ -302,10 +315,13 @@ function BranchModal({ branch, onClose, onSaved }) {
       setError('The manager\u2019s password and confirmation don\u2019t match.');
       return;
     }
+    const changingType = Boolean(branch.shop_type && form.shop_type && form.shop_type !== branch.shop_type);
+    if (changingType && !window.confirm(typeChangeWarning(branch, form.shop_type))) return;
     setSaving(true);
     try {
       const payload = { ...form, opening_date: form.opening_date || null };
       delete payload.confirm_password;
+      if (!changingType) delete payload.shop_type;
       await branchesApi.update(branch.id, payload);
       onSaved();
     } catch (err) {
@@ -329,6 +345,15 @@ function BranchModal({ branch, onClose, onSaved }) {
             <input value={form.branch_code} onChange={(e) => set('branch_code', e.target.value)} placeholder="e.g. WUSE001" />
           </div>
         </div>
+
+        {branch.shop_type && (
+          <div className="field"><label>Kind of shop</label>
+            <select aria-label="Kind of shop" value={form.shop_type} onChange={(e) => set('shop_type', e.target.value)}>
+              {SHOP_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <div className="field-hint">{shopType(form.shop_type).hint}</div>
+          </div>
+        )}
 
         <div className="field"><label>Address</label>
           <input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Street, area, city" />

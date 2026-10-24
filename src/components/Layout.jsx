@@ -59,35 +59,67 @@ const CEO_NAV_ITEMS = [
 const STAFF_ROLE_LABEL = {
   owner: 'Owner', branch_manager: 'Branch manager', seller: 'Seller',
   reception: 'Receptionist', technician: 'Service technician',
-  attendant: 'Shop attendant', other: 'Other',
+  attendant: 'Shop attendant', cashier: 'Cashier', waiter: 'Waiter', kitchen: 'Kitchen staff', other: 'Other',
 };
 
+// A restaurant branch's own pages, straight in the sidebar (owner's request, 23 Oct 2026: the
+// restaurant is the main thing there, not one page among a shop's). Owners and managers only.
+const RESTAURANT_SETUP_ITEMS = [
+  { to: '/app/menu', label: 'Menu', mobileLabel: 'Menu', icon: Icons.menu },
+  { to: '/app/tables', label: 'Tables', mobileLabel: 'Tables', icon: Icons.tables },
+  { to: '/app/kitchen', label: 'Kitchen', mobileLabel: 'Kitchen', icon: Icons.kitchen },
+];
+const RESTAURANT_SETTINGS_ITEMS = [
+  { to: '/app/taxes', label: 'Taxes & charges', mobileLabel: 'Taxes', icon: Icons.percent },
+  { to: '/app/hub-till', label: 'Hub till', mobileLabel: 'Hub', icon: Icons.device },
+];
+
 export default function Layout() {
-  const { user, logout, isOwner, isCeo, canPay, capabilities, shopName, serviceEnabled } = useAuth();
+  const { user, logout, isOwner, isCeo, canPay, capabilities, shopName, serviceEnabled, restaurantEnabled, allBranchesView, allRestaurant } = useAuth();
   const { status: liveStatus, versions } = useLive();
   const { theme, toggleTheme } = useTheme();
-  // Service (device repair/servicing) only makes sense for businesses that
-  // actually fix devices — a clothing or general retail shop never sees
-  // the tab at all, rather than seeing an empty/irrelevant section. Driven
-  // entirely by what the owner picked at signup (Organization.business_type
-  // on the backend).
-  const coreItems = serviceEnabled
-    ? [...BASE_NAV_ITEMS, SERVICE_NAV_ITEM, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM]
-    : [...BASE_NAV_ITEMS, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM];
-  const items = [
-    ...coreItems,
+  // Service (device repair/servicing) only makes sense for branches that
+  // actually fix devices — a clothing shop or a restaurant never sees the
+  // tab at all, rather than an empty/irrelevant section. Follows the kind of
+  // shop the VIEWED branch is (Shop.shop_type and its modules on the backend;
+  // AuthContext's branchView).
+  const reportsItem = isOwner || capabilities.view_financial_reports ? [{ to: '/app/reports', label: 'Reports', mobileLabel: 'Reports', icon: Icons.reports }] : [];
+  const moneyItems = [
     // isOwner already implies every one of these capabilities too (see
     // core.capabilities.has_capability's owner/branch-manager bypass) —
     // the capability check alone would be enough, but keeping `isOwner ||`
     // explicit here avoids a network round trip's worth of doubt about
     // ordering before `capabilities` has loaded for the common case.
-    ...(isOwner || capabilities.view_financial_reports ? [{ to: '/app/reports', label: 'Reports', mobileLabel: 'Reports', icon: Icons.reports }] : []),
     ...(isOwner || capabilities.manage_liabilities ? [{ to: '/app/liabilities', label: 'Liabilities', mobileLabel: 'Owe', icon: Icons.liabilities }] : []),
     ...(isOwner || capabilities.manage_expenses ? [{ to: '/app/expenses', label: 'Expenses', mobileLabel: 'Expenses', icon: Icons.billing }] : []),
+  ];
+  const ceoItems = isCeo ? CEO_NAV_ITEMS : canPay ? CEO_NAV_ITEMS.filter((i) => /billing/.test(i.to)) : [];
+  // A restaurant branch (or "All branches" when every branch is a restaurant): the restaurant first,
+  // its stock as Stock, no shop selling screens (orders are taken on the hub till; closed ones are in
+  // Reports), no repairs and no shop promotions.
+  const restaurantNav = restaurantEnabled || (allBranchesView && allRestaurant);
+  const items = restaurantNav ? [
+    BASE_NAV_ITEMS[0],
+    ...(isOwner ? RESTAURANT_SETUP_ITEMS : []),
+    { ...BASE_NAV_ITEMS[1], label: 'Stock', mobileLabel: 'Stock' },
+    ...reportsItem,
+    ...(isOwner ? RESTAURANT_SETTINGS_ITEMS : []),
+    SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM,
+    ...moneyItems,
+    ...(isOwner ? OWNER_ONLY_NAV_ITEMS : []),
+    ...(isOwner ? [{ to: '/app/audit', label: 'Audit log', mobileLabel: 'Audit', icon: Icons.reports }] : []),
+    ...ceoItems,
+    ...(isOwner ? [SETTINGS_NAV_ITEM] : []),
+  ] : [
+    ...(serviceEnabled
+      ? [...BASE_NAV_ITEMS, SERVICE_NAV_ITEM, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM]
+      : [...BASE_NAV_ITEMS, SALES_NAV_ITEM, SHIFTS_NAV_ITEM, ATTENDANCE_NAV_ITEM]),
+    ...reportsItem,
+    ...moneyItems,
     ...(isOwner ? OWNER_ONLY_NAV_ITEMS : []),
     ...(isOwner ? [{ to: '/app/audit', label: 'Audit log', mobileLabel: 'Audit', icon: Icons.reports }] : []),
     ...(isOwner ? [{ to: '/app/promotions', label: 'Promotions', mobileLabel: 'Promos', icon: Icons.billing }] : []),
-    ...(isCeo ? CEO_NAV_ITEMS : canPay ? CEO_NAV_ITEMS.filter((i) => /billing/.test(i.to)) : []),
+    ...ceoItems,
     ...(isOwner ? [SETTINGS_NAV_ITEM] : []),
   ];
 
